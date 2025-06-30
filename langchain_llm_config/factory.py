@@ -76,13 +76,10 @@ def create_assistant(
             **kwargs,
         )
     elif provider == "gemini":
-        # 对于Gemini，传递特定参数
+        # 对于Gemini，传递config对象
         return provider_class(
-            model_name=provider_config["model_name"],
+            config=provider_config,
             response_model=response_model,
-            temperature=provider_config.get("temperature", 0.7),
-            max_tokens=provider_config.get("max_tokens", 2000),
-            api_key=provider_config.get("api_key"),
             system_prompt=system_prompt,
             **kwargs,
         )

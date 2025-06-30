@@ -30,7 +30,7 @@ class VLLMEmbeddingProvider(BaseEmbeddingProvider):
         embedding_params = {
             "model": config["model_name"],
             "api_key": config.get("api_key"),
-            "base_url": config["api_base"],
+            "base_url": config.get("api_base", "http://localhost:8000/v1"),  # Make api_base optional
             "timeout": config.get("timeout", 30),
             "tiktoken_enabled": True,
         }

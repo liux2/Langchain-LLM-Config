@@ -1,6 +1,6 @@
 # Langchain LLM Config
 
-Yet another redundent Langchain abstraction: comprehensive Python package for managing and using multiple LLM providers (OpenAI, VLLM, Gemini, Infinity) with a unified interface for both chat assistants and embeddings.
+Yet another redundant Langchain abstraction: comprehensive Python package for managing and using multiple LLM providers (OpenAI, VLLM, Gemini, Infinity) with a unified interface for both chat assistants and embeddings.
 
 ## Features
 
@@ -11,6 +11,9 @@ Yet another redundent Langchain abstraction: comprehensive Python package for ma
 - 🔄 **Easy Context Concatenation**: Simplified process for combining contexts into chat
 - 🔒 **Environment Variables**: Secure API key management
 - 📦 **Self-Contained**: No need to import specific paths
+- ⚡ **Async Support**: Full async/await support for all operations
+- 🌊 **Streaming Chat**: Real-time streaming responses for interactive experiences
+- 🛠️ **Enhanced CLI**: Environment setup and validation commands
 
 ## Installation
 
@@ -46,7 +49,19 @@ llm-config init ~/.config/api.yaml
 
 This creates an `api.yaml` file with all supported providers configured.
 
-### 2. Configure Your Providers
+### 2. Set Up Environment Variables
+
+```bash
+# Set up environment variables and create .env file
+llm-config setup-env
+
+# Or with custom config path
+llm-config setup-env --config-path ~/.config/.env
+```
+
+This creates a `.env` file with placeholders for your API keys.
+
+### 3. Configure Your Providers
 
 Edit the generated `api.yaml` file with your API keys and settings:
 
@@ -76,16 +91,18 @@ llm:
     embedding_provider: "openai"
 ```
 
-### 3. Set Environment Variables
+### 4. Set Environment Variables
 
-Create a `.env` file or set environment variables:
+Edit the `.env` file with your actual API keys:
 
 ```bash
-export OPENAI_API_KEY="your-openai-api-key"
-export GEMINI_API_KEY="your-gemini-api-key"
+OPENAI_API_KEY=your-openai-api-key
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
-### 4. Use in Your Code
+### 5. Use in Your Code
+
+#### Basic Usage (Synchronous)
 
 ```python
 from langchain_llm_config import create_assistant, create_embedding_provider
@@ -105,16 +122,48 @@ assistant = create_assistant(
     provider="openai"  # or "vllm", "gemini"
 )
 
-# Use the assistant
-result = await assistant.ask("Analyze this article: ...")
-print(result.summary)
+# Use the assistant (synchronous)
+result = assistant.ask("Analyze this article: ...")
+print(result["summary"])
 
 # Create an embedding provider
 embedding_provider = create_embedding_provider(provider="openai")
 
-# Get embeddings
+# Get embeddings (synchronous)
 texts = ["Hello world", "How are you?"]
-embeddings = await embedding_provider.embed_texts(texts)
+embeddings = embedding_provider.embed_texts(texts)
+```
+
+#### Advanced Usage (Asynchronous)
+
+```python
+import asyncio
+
+# Use the assistant (asynchronous)
+result = await assistant.ask_async("Analyze this article: ...")
+print(result["summary"])
+
+# Get embeddings (asynchronous)
+embeddings = await embedding_provider.embed_texts_async(texts)
+```
+
+#### Streaming Chat
+
+```python
+from langchain_llm_config import create_chat_streaming
+
+# Create streaming chat assistant
+streaming_chat = create_chat_streaming(
+    provider="openai",
+    system_prompt="You are a helpful assistant."
+)
+
+# Stream responses in real-time
+async for chunk in streaming_chat.chat_stream("Tell me a story"):
+    if chunk["type"] == "stream":
+        print(chunk["content"], end="", flush=True)
+    elif chunk["type"] == "final":
+        print(f"\n\nProcessing time: {chunk['processing_time']:.2f}s")
 ```
 
 ## Supported Providers
@@ -141,6 +190,9 @@ embeddings = await embedding_provider.embed_texts(texts)
 # Initialize a new configuration file
 llm-config init [path]
 
+# Set up environment variables and create .env file
+llm-config setup-env [path] [--force]
+
 # Validate existing configuration
 llm-config validate [path]
 
@@ -161,19 +213,15 @@ assistant = create_assistant(
 )
 ```
 
-### Streaming Chat
+### Context-Aware Conversations
 
 ```python
-from langchain_llm_config import create_chat_streaming
-
-streaming_chat = create_chat_streaming(
-    provider="openai",
-    system_prompt="You are a helpful assistant."
+# Add context to your queries
+result = await assistant.ask_async(
+    query="What are the main points?",
+    context="This is a research paper about machine learning...",
+    extra_system_prompt="Focus on technical details."
 )
-
-# Stream responses
-async for chunk in streaming_chat.stream("Tell me a story"):
-    print(chunk, end="", flush=True)
 ```
 
 ### Direct Provider Usage
@@ -190,6 +238,48 @@ vllm_assistant = VLLMAssistant(
 openai_embeddings = OpenAIEmbeddingProvider(
     config={"api_key": "your-key", "model_name": "text-embedding-ada-002"}
 )
+```
+
+### Complete Example with Error Handling
+
+```python
+import asyncio
+from langchain_llm_config import create_assistant, create_embedding_provider
+from pydantic import BaseModel, Field
+from typing import List
+
+class ChatResponse(BaseModel):
+    message: str = Field(..., description="The assistant's response message")
+    confidence: float = Field(..., description="Confidence score", ge=0.0, le=1.0)
+    suggestions: List[str] = Field(default_factory=list, description="Follow-up questions")
+
+async def main():
+    try:
+        # Create assistant
+        assistant = create_assistant(
+            response_model=ChatResponse,
+            provider="openai",
+            system_prompt="You are a helpful AI assistant."
+        )
+        
+        # Chat conversation
+        response = await assistant.ask_async("What is the capital of France?")
+        print(f"Assistant: {response['message']}")
+        print(f"Confidence: {response['confidence']:.2f}")
+        
+        # Create embedding provider
+        embedding_provider = create_embedding_provider(provider="openai")
+        
+        # Get embeddings
+        texts = ["Hello world", "How are you?"]
+        embeddings = await embedding_provider.embed_texts_async(texts)
+        print(f"Generated {len(embeddings)} embeddings")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+
+# Run the example
+asyncio.run(main())
 ```
 
 ## Configuration Reference
@@ -213,6 +303,10 @@ llm:
       model_name: "model-name"
       temperature: 0.7
       max_tokens: 8192
+      top_p: 1.0
+      connect_timeout: 60
+      read_timeout: 60
+      model_kwargs: {}
       # ... other parameters
     embeddings:
       api_base: "https://api.example.com/v1"
