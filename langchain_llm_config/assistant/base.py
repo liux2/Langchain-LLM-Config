@@ -109,7 +109,7 @@ class Assistant:
         # 构建链
         self.chain = RunnablePassthrough() | self.prompt | self.llm | self.parser
 
-    async def ask(
+    def ask(
         self,
         query: str,
         extra_system_prompt: Optional[str] = None,
@@ -117,7 +117,56 @@ class Assistant:
         **kwargs,
     ) -> Dict[str, Any]:
         """
-        处理用户查询并返回结构化响应
+        处理用户查询并返回结构化响应（同步版本）
+
+        Args:
+            query: 用户查询文本
+            extra_system_prompt: 额外的系统提示
+            context: 可选的上下文信息
+            **kwargs: 额外参数
+
+        Returns:
+            解析并验证后的结构化响应
+
+        Raises:
+            ValueError: 当处理查询时发生错误
+        """
+        try:
+            # 构建系统提示
+            system_prompt = self.system_prompt or ""
+            if extra_system_prompt:
+                system_prompt = (
+                    f"{system_prompt}\n{extra_system_prompt}"
+                    if system_prompt
+                    else extra_system_prompt
+                )
+
+            # 构建上下文信息
+            context_str = f"背景信息：{context}" if context else ""
+
+            # 获取原始输出
+            raw_output = self.chain.invoke(
+                {
+                    "question": query,
+                    "system_prompt": system_prompt,
+                    "context": context_str,
+                }
+            )
+
+            return raw_output.model_dump()
+
+        except Exception as e:
+            raise ValueError(f"处理查询时出错: {str(e)}") from e
+
+    async def ask_async(
+        self,
+        query: str,
+        extra_system_prompt: Optional[str] = None,
+        context: Optional[str] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        处理用户查询并返回结构化响应（异步版本）
 
         Args:
             query: 用户查询文本

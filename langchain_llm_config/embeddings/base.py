@@ -21,9 +21,22 @@ class BaseEmbeddingProvider(ABC):
         pass
 
     @abstractmethod
-    async def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """
-        嵌入文本列表
+        嵌入文本列表（同步版本）
+
+        Args:
+            texts: 要嵌入的文本列表
+
+        Returns:
+            嵌入向量列表
+        """
+        pass
+
+    @abstractmethod
+    async def embed_texts_async(self, texts: List[str]) -> List[List[float]]:
+        """
+        嵌入文本列表（异步版本）
 
         Args:
             texts: 要嵌入的文本列表

@@ -1,5 +1,6 @@
 from typing import Dict, List
 import asyncio
+import time
 from langchain_community.embeddings import (
     InfinityEmbeddings as LangchainInfinityEmbeddings,
 )
@@ -37,9 +38,41 @@ class InfinityEmbeddingProvider(BaseEmbeddingProvider):
         """获取嵌入模型"""
         return self._embeddings
 
-    async def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """
-        嵌入文本列表
+        嵌入文本列表（同步版本）
+
+        Args:
+            texts: 要嵌入的文本列表
+
+        Returns:
+            嵌入向量列表
+        """
+        if not texts:
+            return []
+
+        retry_count = 0
+        last_error = None
+
+        while retry_count < self._max_retries:
+            try:
+                result = self._embeddings.embed_documents(texts)
+                return result
+            except Exception as e:
+                retry_count += 1
+                last_error = e
+
+                if retry_count < self._max_retries:
+                    # 指数退避重试
+                    wait_time = self._retry_delay * (2 ** (retry_count - 1))
+                    time.sleep(wait_time)
+
+        # 所有重试都失败，使用内置模型或返回错误
+        raise Exception(f"嵌入文本失败: {str(last_error)}")
+
+    async def embed_texts_async(self, texts: List[str]) -> List[List[float]]:
+        """
+        嵌入文本列表（异步版本）
 
         Args:
             texts: 要嵌入的文本列表

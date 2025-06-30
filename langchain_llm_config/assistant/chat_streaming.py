@@ -29,7 +29,7 @@ class ChatStreaming:
         """Initialize the Chat Streaming Assistant"""
         self.model_name = model_name
         self.system_prompt = system_prompt or ""
-        
+
         # Initialize LLM
         self.llm = ChatOpenAI(
             model=model_name,
@@ -41,18 +41,13 @@ class ChatStreaming:
             model_kwargs=model_kwargs or {},
             timeout=(connect_timeout, read_timeout),
         )
-        
+
         self._setup_prompt()
 
     def _setup_prompt(self):
         """Set up prompt template for chat"""
-        template = (
-            "{system_prompt}\n\n"
-            "{context}\n"
-            "用户: {question}\n"
-            "助手:"
-        )
-        
+        template = "{system_prompt}\n\n" "{context}\n" "用户: {question}\n" "助手:"
+
         self.prompt = PromptTemplate(
             template=template,
             input_variables=["question", "system_prompt", "context"],
@@ -67,7 +62,7 @@ class ChatStreaming:
     ) -> Dict[str, Any]:
         """Process user query and return complete response"""
         start_time = time.time()
-        
+
         try:
             # Build system prompt
             system_prompt = self.system_prompt or ""
@@ -77,10 +72,10 @@ class ChatStreaming:
                     if system_prompt
                     else extra_system_prompt
                 )
-            
+
             # Build context
             context_str = f"背景信息：{context}" if context else ""
-            
+
             # Get response from LLM
             response = await self.llm.ainvoke(
                 self.prompt.format(
@@ -89,15 +84,15 @@ class ChatStreaming:
                     context=context_str,
                 )
             )
-            
+
             processing_time = time.time() - start_time
-            
+
             return {
                 "content": response.content,
                 "processing_time": processing_time,
                 "model_used": self.model_name,
             }
-            
+
         except Exception as e:
             raise ValueError(f"处理查询时出错: {str(e)}") from e
 
@@ -110,12 +105,12 @@ class ChatStreaming:
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat response in real-time
-        
+
         This method streams the LLM response token by token without any
         response model constraints or structured output requirements
         """
         start_time = time.time()
-        
+
         try:
             # Build system prompt
             system_prompt = self.system_prompt or ""
@@ -125,13 +120,13 @@ class ChatStreaming:
                     if system_prompt
                     else extra_system_prompt
                 )
-            
+
             # Build context
             context_str = f"背景信息：{context}" if context else ""
-            
+
             # Initialize streaming state
             full_response = ""
-            
+
             # Stream directly from LLM
             async for chunk in self.llm.astream(
                 self.prompt.format(
@@ -140,10 +135,10 @@ class ChatStreaming:
                     context=context_str,
                 )
             ):
-                if hasattr(chunk, 'content') and chunk.content:
+                if hasattr(chunk, "content") and chunk.content:
                     content = chunk.content
                     full_response += content
-                    
+
                     # Yield token-level streaming
                     yield {
                         "type": "stream",
@@ -153,7 +148,7 @@ class ChatStreaming:
                         "model_used": self.model_name,
                         "is_complete": False,
                     }
-            
+
             # Yield final result
             processing_time = time.time() - start_time
             yield {
@@ -163,11 +158,11 @@ class ChatStreaming:
                 "model_used": self.model_name,
                 "is_complete": True,
             }
-            
+
         except Exception as e:
             yield {
                 "type": "error",
                 "error": str(e),
                 "processing_time": time.time() - start_time,
                 "is_complete": True,
-            } 
+            }

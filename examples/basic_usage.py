@@ -12,24 +12,26 @@ from langchain_llm_config import create_assistant, create_embedding_provider
 # Example response model
 class ArticleAnalysis(BaseModel):
     """Article analysis response model"""
-    
+
     summary: str = Field(..., description="Brief summary of the article")
     keywords: List[str] = Field(..., description="Key topics and concepts")
-    sentiment: str = Field(..., description="Overall sentiment (positive/negative/neutral)")
+    sentiment: str = Field(
+        ..., description="Overall sentiment (positive/negative/neutral)"
+    )
     word_count: int = Field(..., description="Approximate word count")
 
 
 async def assistant_example():
     """Example of using the assistant"""
     print("🤖 Creating assistant...")
-    
+
     # Create an assistant with structured output
     assistant = create_assistant(
         response_model=ArticleAnalysis,
         system_prompt="You are a professional article analyzer. Provide accurate and concise analysis.",
-        provider="openai"  # Can be "openai", "vllm", or "gemini"
+        provider="openai",  # Can be "openai", "vllm", or "gemini"
     )
-    
+
     # Sample article
     article = """
     Artificial Intelligence (AI) has emerged as one of the most transformative technologies of the 21st century. 
@@ -42,10 +44,10 @@ async def assistant_example():
     technologies benefit humanity while minimizing potential risks. The future of AI depends not just on 
     technological innovation, but also on thoughtful governance and responsible development practices.
     """
-    
+
     print("📝 Analyzing article...")
     result = await assistant.ask(f"Please analyze this article: {article}")
-    
+
     print("\n📊 Analysis Results:")
     print(f"Summary: {result.summary}")
     print(f"Keywords: {', '.join(result.keywords)}")
@@ -56,52 +58,56 @@ async def assistant_example():
 async def embedding_example():
     """Example of using embeddings"""
     print("\n🔗 Creating embedding provider...")
-    
+
     # Create an embedding provider
     embedding_provider = create_embedding_provider(provider="openai")
-    
+
     # Sample texts
     texts = [
         "Artificial Intelligence is transforming the world",
         "Machine learning algorithms are becoming more sophisticated",
         "The weather is sunny today",
-        "I love programming in Python"
+        "I love programming in Python",
     ]
-    
+
     print("📝 Generating embeddings...")
     embeddings = await embedding_provider.embed_texts(texts)
-    
+
     print(f"\n📊 Embedding Results:")
     print(f"Generated {len(embeddings)} embeddings")
     print(f"Each embedding has {len(embeddings[0])} dimensions")
-    
+
     # Show similarity between first two texts (should be high)
     from numpy import dot
     from numpy.linalg import norm
-    
-    similarity = dot(embeddings[0], embeddings[1]) / (norm(embeddings[0]) * norm(embeddings[1]))
+
+    similarity = dot(embeddings[0], embeddings[1]) / (
+        norm(embeddings[0]) * norm(embeddings[1])
+    )
     print(f"Similarity between texts 1 and 2: {similarity:.3f}")
 
 
 async def streaming_example():
     """Example of streaming chat"""
     print("\n🌊 Creating streaming chat...")
-    
+
     from langchain_llm_config import create_chat_streaming
-    
+
     # Create a streaming chat instance
     streaming_chat = create_chat_streaming(
         provider="openai",
-        system_prompt="You are a helpful assistant that provides concise answers."
+        system_prompt="You are a helpful assistant that provides concise answers.",
     )
-    
+
     print("💬 Streaming response...")
     print("Response: ", end="", flush=True)
-    
+
     # Stream the response
-    async for chunk in streaming_chat.stream("Explain quantum computing in simple terms"):
+    async for chunk in streaming_chat.stream(
+        "Explain quantum computing in simple terms"
+    ):
         print(chunk, end="", flush=True)
-    
+
     print("\n")
 
 
@@ -109,15 +115,15 @@ async def main():
     """Main example function"""
     print("🚀 Langchain LLM Config - Basic Usage Examples")
     print("=" * 50)
-    
+
     try:
         # Run examples
         await assistant_example()
         await embedding_example()
         await streaming_example()
-        
+
         print("\n✅ All examples completed successfully!")
-        
+
     except Exception as e:
         print(f"\n❌ Error running examples: {e}")
         print("\n💡 Make sure you have:")
@@ -128,4 +134,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    asyncio.run(main())
