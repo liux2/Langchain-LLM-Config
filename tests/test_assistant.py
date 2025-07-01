@@ -501,9 +501,10 @@ class TestChatStreaming:
         # Create an async generator function that raises an exception
         async def mock_generator(*args: Any, **kwargs: Any) -> Any:
             raise Exception("Stream test error")
+            yield None
 
-        # mock_llm.astream should return the async generator function
-        mock_llm.astream = mock_generator
+        # mock_llm.astream should be a method that returns the async generator
+        mock_llm.astream = MagicMock(return_value=mock_generator())
 
         streaming = ChatStreaming(model_name="test-model")
 
