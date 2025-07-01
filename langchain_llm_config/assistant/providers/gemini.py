@@ -43,12 +43,20 @@ class GeminiAssistant(Assistant):
         connect_timeout = config.get("connect_timeout", 30)
         model_kwargs = config.get("model_kwargs", {})
 
-        # 初始化Gemini LLM
+        # Ensure model_kwargs is a dictionary
+        if model_kwargs is None:
+            model_kwargs = {}
+
+        # Add model-specific parameters to model_kwargs
+        if max_tokens is not None:
+            model_kwargs["max_output_tokens"] = max_tokens
+        if top_p is not None:
+            model_kwargs["top_p"] = top_p
+
+        # 初始化Gemini LLM with only top-level accepted parameters
         self.llm: Any = ChatGoogleGenerativeAI(
             model=model_name,
             temperature=temperature,
-            max_output_tokens=max_tokens,
-            top_p=top_p,
             google_api_key=SecretStr(
                 api_key or os.getenv("GEMINI_API_KEY", "dummy-key") or ""
             ),

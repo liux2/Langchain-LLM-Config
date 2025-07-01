@@ -54,17 +54,25 @@ class Assistant:
         self.system_prompt = system_prompt
         self.response_model = response_model
 
-        # 初始化LLM
+        # Ensure model_kwargs is a dictionary
+        if model_kwargs is None:
+            model_kwargs = {}
+
+        # Add model-specific parameters to model_kwargs
+        if max_tokens is not None:
+            model_kwargs["max_tokens"] = max_tokens
+        if top_p is not None:
+            model_kwargs["top_p"] = top_p
+
+        # 初始化LLM with only top-level accepted parameters
         self.llm: Any = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            max_tokens=max_tokens,  # type: ignore[call-arg]
             base_url=base_url,
-            top_p=top_p,
             api_key=SecretStr(
                 api_key or os.getenv("OPENAI_API_KEY", "dummy-key") or ""
             ),
-            model_kwargs=model_kwargs or {},
+            model_kwargs=model_kwargs,
             timeout=(connect_timeout, read_timeout),
         )
 
