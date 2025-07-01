@@ -151,8 +151,7 @@ class ChatStreaming:
                     # Ensure content is a string
                     if isinstance(content, list):
                         content = "".join(str(item) for item in content)
-                    elif not isinstance(content, str):
-                        content = str(content)
+
                     full_response += content
 
                     # Yield token-level streaming
@@ -166,7 +165,6 @@ class ChatStreaming:
                     }
 
             # Yield final result
-            # type: ignore[unreachable]
             processing_time = time.time() - start_time
             yield {
                 "type": "final",
