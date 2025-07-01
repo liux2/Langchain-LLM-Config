@@ -13,10 +13,10 @@ class GeminiAssistant(Assistant):
 
     def __init__(
         self,
-        config: Dict,
+        config: Dict[str, Any],
         response_model: Type[BaseModel],
         system_prompt: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """
         初始化VLLM助手
@@ -45,13 +45,13 @@ class GeminiAssistant(Assistant):
         model_kwargs = config.get("model_kwargs", {})
 
         # 初始化Gemini LLM
-        self.llm = ChatGoogleGenerativeAI(
+        self.llm: Any = ChatGoogleGenerativeAI(
             model=model_name,
             temperature=temperature,
             max_output_tokens=max_tokens,
             top_p=top_p,
             google_api_key=api_key or os.getenv("GOOGLE_API_KEY", "dummy-key"),
-            request_timeout=(connect_timeout, read_timeout),
+            timeout=float(connect_timeout) if connect_timeout else None,
             **model_kwargs,
         )
 

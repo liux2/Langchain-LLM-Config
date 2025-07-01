@@ -57,10 +57,10 @@ def load_config(config_path: Optional[Union[str, Path]] = None, strict: bool = F
         raise ValueError(f"Configuration file not found: {config_path}")
 
     with open(config_path, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
+        config: Dict[str, Any] = yaml.safe_load(f)
 
     # Process environment variables
-    llm_config = config["llm"]
+    llm_config: Dict[str, Any] = config["llm"]
     for provider_name, provider_config in llm_config.items():
         if provider_name == "default":
             continue
@@ -170,6 +170,11 @@ def init_config(config_path: Optional[Union[str, Path]] = None) -> Path:
                         "model_name": "gemini-pro",
                         "temperature": 0.7,
                         "max_tokens": 8192,
+                    },
+                    "embeddings": {
+                        "api_key": "${GEMINI_API_KEY}",
+                        "model_name": "embedding-001",
+                        "timeout": 30,
                     }
                 },
                 "infinity": {

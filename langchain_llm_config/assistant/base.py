@@ -55,13 +55,13 @@ class Assistant:
         self.response_model = response_model
 
         # 初始化LLM
-        self.llm = ChatOpenAI(
+        self.llm: Any = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            max_output_tokens=max_tokens,
+            max_tokens=max_tokens,
             base_url=base_url,
             top_p=top_p,
-            api_key=SecretStr(api_key or os.getenv("OPENAI_API_KEY", "dummy-key")),
+            api_key=SecretStr(api_key or os.getenv("OPENAI_API_KEY", "dummy-key") or ""),
             model_kwargs=model_kwargs or {},
             timeout=(connect_timeout, read_timeout),
         )
@@ -107,7 +107,8 @@ class Assistant:
         )
 
         # 构建链
-        self.chain: RunnablePassthrough = RunnablePassthrough() | self.prompt | self.llm | self.parser
+        from langchain_core.runnables import Runnable
+        self.chain: Runnable = RunnablePassthrough() | self.prompt | self.llm | self.parser
 
     def ask(
         self,
@@ -153,7 +154,8 @@ class Assistant:
                 }
             )
 
-            return raw_output.model_dump()
+            result: Dict[str, Any] = raw_output.model_dump()
+            return result
 
         except Exception as e:
             raise ValueError(f"处理查询时出错: {str(e)}") from e
@@ -202,7 +204,8 @@ class Assistant:
                 }
             )
 
-            return raw_output.model_dump()
+            result: Dict[str, Any] = raw_output.model_dump()
+            return result
 
         except Exception as e:
             raise ValueError(f"处理查询时出错: {str(e)}") from e

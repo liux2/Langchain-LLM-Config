@@ -471,8 +471,6 @@ class TestChatStreaming:
         # Create an async generator function that raises an exception
         async def mock_generator(*args: Any, **kwargs: Any) -> Any:
             raise Exception("Stream test error")
-            # This yield is technically not reached, but makes it a generator
-            yield None  # type: ignore[unreachable]
 
         # mock_llm.astream should *return* the async generator, not be one itself
         mock_llm.astream.return_value = mock_generator()
@@ -505,8 +503,7 @@ class TestChatStreaming:
         # Mock empty response
         async def mock_stream(*args: Any, **kwargs: Any) -> Any:
             # Empty generator
-            if False:  # type: ignore[unreachable]
-                yield None
+            return
 
         mock_llm.astream = mock_stream
 

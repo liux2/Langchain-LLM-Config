@@ -4,6 +4,7 @@ Pytest configuration and fixtures for langchain-llm-config tests
 
 import tempfile
 from pathlib import Path
+from typing import Generator
 from unittest.mock import patch
 
 import pytest
@@ -11,7 +12,7 @@ import yaml
 
 
 @pytest.fixture
-def test_config_file():
+def test_config_file() -> Generator[str, None, None]:
     """
     Create a temporary test configuration file with mock API keys
     """
@@ -59,6 +60,11 @@ def test_config_file():
                     "model_name": "gemini-pro",
                     "temperature": 0.7,
                     "max_tokens": 8192,
+                },
+                "embeddings": {
+                    "api_key": "test-key-not-for-production",
+                    "model_name": "embedding-001",
+                    "timeout": 30,
                 }
             },
             "infinity": {
@@ -82,7 +88,7 @@ def test_config_file():
 
 
 @pytest.fixture
-def mock_env_vars():
+def mock_env_vars() -> Generator[None, None, None]:
     """
     Mock environment variables for testing
     """
@@ -98,7 +104,7 @@ def mock_env_vars():
 
 
 @pytest.fixture(autouse=True)
-def suppress_warnings():
+def suppress_warnings() -> Generator[None, None, None]:
     """
     Suppress warnings during tests to keep output clean
     """

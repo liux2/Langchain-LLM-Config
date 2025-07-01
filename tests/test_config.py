@@ -3,6 +3,7 @@ Tests for configuration module
 """
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,7 +19,7 @@ from langchain_llm_config.config import (
 class TestConfigFunctions:
     """Test configuration functions"""
 
-    def test_get_default_config_path_cwd_exists(self, tmp_path):
+    def test_get_default_config_path_cwd_exists(self, tmp_path: Path) -> None:
         """Test get_default_config_path when api.yaml exists in current directory"""
         # Create api.yaml in current directory
         api_yaml = tmp_path / "api.yaml"
@@ -28,7 +29,7 @@ class TestConfigFunctions:
             result = get_default_config_path()
             assert result == api_yaml
 
-    def test_get_default_config_path_home_exists(self, tmp_path):
+    def test_get_default_config_path_home_exists(self, tmp_path: Path) -> None:
         """Test get_default_config_path when api.yaml exists in home directory"""
         # Create home directory structure
         home_dir = tmp_path / ".langchain-llm-config"
@@ -44,20 +45,20 @@ class TestConfigFunctions:
             result = get_default_config_path()
             assert result == api_yaml
 
-    def test_get_default_config_path_default(self, tmp_path):
+    def test_get_default_config_path_default(self, tmp_path: Path) -> None:
         """Test get_default_config_path when no api.yaml exists"""
         with patch("langchain_llm_config.config.Path.cwd", return_value=tmp_path):
             result = get_default_config_path()
             assert result == tmp_path / "api.yaml"
 
-    def test_load_config_file_not_found(self):
+    def test_load_config_file_not_found(self) -> None:
         """Test load_config with file not found"""
         with pytest.raises(
             ValueError, match="Configuration file not found: nonexistent_file.yaml"
         ):
             load_config("nonexistent_file.yaml")
 
-    def test_load_config_with_default_values(self, tmp_path):
+    def test_load_config_with_default_values(self, tmp_path: Path) -> None:
         """Test load_config with default values"""
         config_content = {
             "llm": {
@@ -86,7 +87,7 @@ class TestConfigFunctions:
             "",
         ]
 
-    def test_load_config_with_custom_default_values(self, tmp_path):
+    def test_load_config_with_custom_default_values(self, tmp_path: Path) -> None:
         """Test load_config with custom default values"""
         config_content = {
             "llm": {
@@ -110,7 +111,7 @@ class TestConfigFunctions:
         # Verify default value is used for unknown provider
         assert config["custom_provider"]["chat"]["api_key"] == ""
 
-    def test_load_config_with_mixed_env_vars_and_literals(self, tmp_path):
+    def test_load_config_with_mixed_env_vars_and_literals(self, tmp_path: Path) -> None:
         """Test load_config with mixed environment variables and literal values"""
         config_content = {
             "llm": {
@@ -137,7 +138,7 @@ class TestConfigFunctions:
         assert config["openai"]["chat"]["model_name"] == "gpt-3.5-turbo"
         assert config["openai"]["chat"]["temperature"] == 0.7
 
-    def test_load_config_strict_mode(self, tmp_path):
+    def test_load_config_strict_mode(self, tmp_path: Path) -> None:
         """Test load_config in strict mode"""
         config_content = {
             "llm": {
@@ -157,7 +158,7 @@ class TestConfigFunctions:
             ):
                 load_config(str(config_file), strict=True)
 
-    def test_load_config_invalid_yaml(self, tmp_path):
+    def test_load_config_invalid_yaml(self, tmp_path: Path) -> None:
         """Test load_config with invalid YAML"""
         config_file = tmp_path / "invalid_api.yaml"
         config_file.write_text("invalid: yaml: content: [")
@@ -165,7 +166,7 @@ class TestConfigFunctions:
         with pytest.raises(yaml.YAMLError):
             load_config(str(config_file))
 
-    def test_init_config_with_template(self, tmp_path):
+    def test_init_config_with_template(self, tmp_path: Path) -> None:
         """Test init_config with existing template"""
         # Create a template file
         template_path = tmp_path / "templates" / "api.yaml"
@@ -175,7 +176,7 @@ class TestConfigFunctions:
         # Mock only the template path resolution
         with patch("langchain_llm_config.config.Path") as mock_path_class:
 
-            def mock_path_init(path_str=None):
+            def mock_path_init(path_str: Any = None) -> Path:
                 if path_str is None:
                     # This is the config_path - use real Path
                     return Path(tmp_path / "new_api.yaml")
@@ -195,10 +196,10 @@ class TestConfigFunctions:
             # The actual content might be different due to the default config generation
             assert target_path.read_text() in [
                 "template: content",
-                "llm:\n  default:\n    chat_provider: openai\n    embedding_provider: openai\n  gemini:\n    chat:\n      api_key: ${GEMINI_API_KEY}\n      max_tokens: 8192\n      model_name: gemini-pro\n      temperature: 0.7\n  infinity:\n    embeddings:\n      api_base: http://localhost:7997/v1\n      model_name: models/bge-m3\n  openai:\n    chat:\n      api_base: https://api.openai.com/v1\n      api_key: ${OPENAI_API_KEY}\n      connect_timeout: 30\n      max_tokens: 8192\n      model_name: gpt-3.5-turbo\n      read_timeout: 60\n      temperature: 0.7\n    embeddings:\n      api_base: https://api.openai.com/v1\n      api_key: ${OPENAI_API_KEY}\n      model_name: text-embedding-ada-002\n      timeout: 30\n  vllm:\n    chat:\n      api_base: http://localhost:8000/v1\n      api_key: ${OPENAI_API_KEY}\n      connect_timeout: 30\n      max_tokens: 8192\n      model_name: meta-llama/Llama-2-7b-chat-hf\n      read_timeout: 60\n      temperature: 0.6\n      top_p: 0.8\n    embeddings:\n      api_base: http://localhost:8000/v1\n      api_key: ${OPENAI_API_KEY}\n      dimensions: 1024\n      model_name: bge-m3\n      timeout: 30\n",
+                "llm:\n  default:\n    chat_provider: openai\n    embedding_provider: openai\n  gemini:\n    chat:\n      api_key: ${GEMINI_API_KEY}\n      max_tokens: 8192\n      model_name: gemini-pro\n      temperature: 0.7\n    embeddings:\n      api_key: ${GEMINI_API_KEY}\n      model_name: embedding-001\n      timeout: 30\n  infinity:\n    embeddings:\n      api_base: http://localhost:7997/v1\n      model_name: models/bge-m3\n  openai:\n    chat:\n      api_base: https://api.openai.com/v1\n      api_key: ${OPENAI_API_KEY}\n      connect_timeout: 30\n      max_tokens: 8192\n      model_name: gpt-3.5-turbo\n      read_timeout: 60\n      temperature: 0.7\n    embeddings:\n      api_base: https://api.openai.com/v1\n      api_key: ${OPENAI_API_KEY}\n      model_name: text-embedding-ada-002\n      timeout: 30\n  vllm:\n    chat:\n      api_base: http://localhost:8000/v1\n      api_key: ${OPENAI_API_KEY}\n      connect_timeout: 30\n      max_tokens: 8192\n      model_name: meta-llama/Llama-2-7b-chat-hf\n      read_timeout: 60\n      temperature: 0.6\n      top_p: 0.8\n    embeddings:\n      api_base: http://localhost:8000/v1\n      api_key: ${OPENAI_API_KEY}\n      dimensions: 1024\n      model_name: bge-m3\n      timeout: 30\n",
             ]
 
-    def test_init_config_without_template(self, tmp_path):
+    def test_init_config_without_template(self, tmp_path: Path) -> None:
         """Test init_config without template file"""
         target_path = tmp_path / "new_api.yaml"
 
@@ -215,7 +216,7 @@ class TestConfigFunctions:
         assert "vllm" in config
         assert "gemini" in config
 
-    def test_init_config_create_parent_directory(self, tmp_path):
+    def test_init_config_create_parent_directory(self, tmp_path: Path) -> None:
         """Test init_config creates parent directory if it doesn't exist"""
         target_path = tmp_path / "nested" / "dir" / "api.yaml"
 
@@ -225,7 +226,7 @@ class TestConfigFunctions:
         assert target_path.exists()
         assert target_path.parent.exists()
 
-    def test_init_config_default_path(self, tmp_path):
+    def test_init_config_default_path(self, tmp_path: Path) -> None:
         """Test init_config with default path"""
         with patch(
             "langchain_llm_config.config.get_default_config_path"

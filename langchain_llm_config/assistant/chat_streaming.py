@@ -35,10 +35,10 @@ class ChatStreaming:
         self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            max_output_tokens=max_tokens,
+            max_tokens=max_tokens,
             base_url=base_url,
             top_p=top_p,
-            api_key=SecretStr(api_key or os.getenv("OPENAI_API_KEY", "dummy-key")),
+            api_key=SecretStr(api_key or os.getenv("OPENAI_API_KEY", "dummy-key") or ""),
             model_kwargs=model_kwargs or {},
             timeout=(connect_timeout, read_timeout),
         )
@@ -138,6 +138,11 @@ class ChatStreaming:
             ):
                 if hasattr(chunk, "content") and chunk.content:
                     content = chunk.content
+                    # Ensure content is a string
+                    if isinstance(content, list):
+                        content = "".join(str(item) for item in content)
+                    elif not isinstance(content, str):
+                        content = str(content)
                     full_response += content
 
                     # Yield token-level streaming
@@ -167,3 +172,21 @@ class ChatStreaming:
                 "processing_time": time.time() - start_time,
                 "is_complete": True,
             }
+
+    async def stream_async(
+        self,
+        query: str,
+        extra_system_prompt: Optional[str] = None,
+        context: Optional[str] = None,
+        **kwargs: Any,
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream chat response as simple text chunks
+        
+        This is a simplified version that yields just the text content
+        """
+        async for chunk in self.chat_stream(query, extra_system_prompt, context, **kwargs):
+            if chunk["type"] == "stream":
+                yield chunk["content"]
+            if chunk["type"] == "error":
+                raise ValueError(chunk["error"])

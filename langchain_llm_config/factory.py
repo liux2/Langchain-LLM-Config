@@ -136,7 +136,7 @@ def create_chat_streaming(
 
 def create_embedding_provider(
     provider: Optional[str] = None, config_path: Optional[str] = None, **kwargs: Any
-) -> BaseEmbeddingProvider:
+) -> Any:
     """
     创建嵌入提供者实例
 

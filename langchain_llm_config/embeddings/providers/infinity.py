@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from langchain_community.embeddings import (
     InfinityEmbeddings as LangchainInfinityEmbeddings,
@@ -13,7 +13,7 @@ from ..base import BaseEmbeddingProvider
 class InfinityEmbeddingProvider(BaseEmbeddingProvider):
     """Infinity嵌入提供者"""
 
-    def __init__(self, config: Dict, **kwargs):
+    def __init__(self, config: Dict[str, Any], **kwargs: Any) -> None:
         """
         初始化Infinity嵌入提供者
 
