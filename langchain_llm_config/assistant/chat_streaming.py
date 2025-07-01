@@ -35,7 +35,7 @@ class ChatStreaming:
         self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            max_tokens=max_tokens,  # type: ignore[call-arg]
+            max_tokens=max_tokens,
             base_url=base_url,
             top_p=top_p,
             api_key=SecretStr(

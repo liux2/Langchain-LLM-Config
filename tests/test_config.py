@@ -170,9 +170,7 @@ class TestConfigFunctions:
         """Test init_config with existing template"""
         # Create a template file in the expected location
         template_dir = (
-            Path(__file__).parent.parent
-            / "langchain_llm_config"
-            / "templates"
+            Path(__file__).parent.parent / "langchain_llm_config" / "templates"
         )
         template_dir.mkdir(parents=True, exist_ok=True)
         template_path = template_dir / "api.yaml"

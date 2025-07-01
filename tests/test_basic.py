@@ -128,7 +128,7 @@ class TestConfig:
 class TestFactory:
     """Test factory functions"""
 
-    @pytest.mark.asyncio  # type: ignore[misc]
+    @pytest.mark.asyncio
     async def test_create_assistant_mock(self) -> None:
         """Test assistant creation with mocked dependencies"""
         from pydantic import BaseModel, Field
@@ -162,7 +162,7 @@ class TestFactory:
 
                 assert assistant is not None
 
-    @pytest.mark.asyncio  # type: ignore[misc]
+    @pytest.mark.asyncio
     async def test_create_embedding_provider_mock(self) -> None:
         """Test embedding provider creation with mocked dependencies"""
         # Mock the embedding provider class

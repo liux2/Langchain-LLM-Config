@@ -189,7 +189,7 @@ class TestAssistantBase:
             assistant.ask("test question")
 
     @patch("langchain_llm_config.assistant.base.RunnablePassthrough")
-    @pytest.mark.asyncio  # type: ignore[misc]
+    @pytest.mark.asyncio
     async def test_ask_async_method_success(self, mock_passthrough: MagicMock) -> None:
         """Test successful ask_async method execution"""
         mock_chain = MagicMock()
@@ -211,7 +211,7 @@ class TestAssistantBase:
         mock_chain.ainvoke.assert_called_once()
 
     @patch("langchain_llm_config.assistant.base.RunnablePassthrough")
-    @pytest.mark.asyncio  # type: ignore[misc]
+    @pytest.mark.asyncio
     async def test_ask_async_method_with_extra_system_prompt(
         self, mock_passthrough: MagicMock
     ) -> None:
@@ -235,7 +235,7 @@ class TestAssistantBase:
         assert call_args["system_prompt"] == "Base prompt\nExtra prompt"
 
     @patch("langchain_llm_config.assistant.base.RunnablePassthrough")
-    @pytest.mark.asyncio  # type: ignore[misc]
+    @pytest.mark.asyncio
     async def test_ask_async_method_exception_handling(
         self, mock_passthrough: MagicMock
     ) -> None:
@@ -501,7 +501,7 @@ class TestChatStreaming:
         # Create an async generator function that raises an exception
         async def mock_generator(*args: Any, **kwargs: Any) -> Any:
             raise Exception("Stream test error")
-            yield None
+            yield None  # type: ignore[unreachable]
 
         # mock_llm.astream should be a method that returns the async generator
         mock_llm.astream = MagicMock(return_value=mock_generator())
@@ -537,7 +537,7 @@ class TestChatStreaming:
         async def mock_stream(*args: Any, **kwargs: Any) -> Any:
             # Empty generator - use yield to make it a proper async generator
             if False:  # This will never be True, so no chunks will be yielded
-                yield None
+                yield None  # type: ignore[unreachable]
 
         mock_llm.astream = mock_stream
 
