@@ -19,8 +19,10 @@ def test_tiktoken_cache_dir_export() -> None:
 
 def test_tiktoken_cache_dir_path() -> None:
     """Test that TIKTOKEN_CACHE_DIR points to the correct location"""
-    # Get the package directory
-    package_dir = Path(__file__).parent.parent / "langchain_llm_config"
+    # Get the package directory from the installed package
+    from langchain_llm_config import __file__ as package_file
+
+    package_dir = Path(package_file).parent
     expected_cache_dir = package_dir / ".tiktoken_cache"
 
     # Convert to string for comparison
