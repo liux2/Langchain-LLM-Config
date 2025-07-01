@@ -168,36 +168,26 @@ class TestConfigFunctions:
 
     def test_init_config_with_template(self, tmp_path: Path) -> None:
         """Test init_config with existing template"""
-        # Create a template file
-        template_path = tmp_path / "templates" / "api.yaml"
-        template_path.parent.mkdir()
+        # Create a template file in the expected location
+        template_dir = Path(__file__).parent.parent / "langchain_llm_config" / "templates"
+        template_dir.mkdir(parents=True, exist_ok=True)
+        template_path = template_dir / "api.yaml"
         template_path.write_text("template: content")
 
-        # Mock only the template path resolution
-        with patch("langchain_llm_config.config.Path") as mock_path_class:
-
-            def mock_path_init(path_str: Any = None) -> Path:
-                if path_str is None:
-                    # This is the config_path - use real Path
-                    return Path(tmp_path / "new_api.yaml")
-                else:
-                    # This is the template path resolution
-                    if "templates" in str(path_str):
-                        return template_path
-                    return Path(path_str)
-
-            mock_path_class.side_effect = mock_path_init
-
+        try:
             target_path = tmp_path / "new_api.yaml"
             result = init_config(str(target_path))
 
             assert result == target_path
             assert target_path.exists()
-            # The actual content might be different due to the default config generation
-            assert target_path.read_text() in [
-                "template: content",
-                "llm:\n  default:\n    chat_provider: openai\n    embedding_provider: openai\n  gemini:\n    chat:\n      api_key: ${GEMINI_API_KEY}\n      max_tokens: 8192\n      model_name: gemini-pro\n      temperature: 0.7\n    embeddings:\n      api_key: ${GEMINI_API_KEY}\n      model_name: embedding-001\n      timeout: 30\n  infinity:\n    embeddings:\n      api_base: http://localhost:7997/v1\n      model_name: models/bge-m3\n  openai:\n    chat:\n      api_base: https://api.openai.com/v1\n      api_key: ${OPENAI_API_KEY}\n      connect_timeout: 30\n      max_tokens: 8192\n      model_name: gpt-3.5-turbo\n      read_timeout: 60\n      temperature: 0.7\n    embeddings:\n      api_base: https://api.openai.com/v1\n      api_key: ${OPENAI_API_KEY}\n      model_name: text-embedding-ada-002\n      timeout: 30\n  vllm:\n    chat:\n      api_base: http://localhost:8000/v1\n      api_key: ${OPENAI_API_KEY}\n      connect_timeout: 30\n      max_tokens: 8192\n      model_name: meta-llama/Llama-2-7b-chat-hf\n      read_timeout: 60\n      temperature: 0.6\n      top_p: 0.8\n    embeddings:\n      api_base: http://localhost:8000/v1\n      api_key: ${OPENAI_API_KEY}\n      dimensions: 1024\n      model_name: bge-m3\n      timeout: 30\n",
-            ]
+            # Should copy the template content
+            assert target_path.read_text() == "template: content"
+        finally:
+            # Clean up the template file
+            if template_path.exists():
+                template_path.unlink()
+            if template_dir.exists():
+                template_dir.rmdir()
 
     def test_init_config_without_template(self, tmp_path: Path) -> None:
         """Test init_config without template file"""

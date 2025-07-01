@@ -1,12 +1,12 @@
 import asyncio
 import os
 import time
+from pathlib import Path
 from typing import Any, Dict, List
 
 from langchain_core.embeddings import Embeddings
 from langchain_openai import OpenAIEmbeddings
 
-from ... import TIKTOKEN_CACHE_DIR
 from ..base import BaseEmbeddingProvider
 
 
@@ -25,8 +25,11 @@ class VLLMEmbeddingProvider(BaseEmbeddingProvider):
                 - timeout: 超时时间（可选）
             **kwargs: 额外参数
         """
+        # Calculate tiktoken cache directory
+        tiktoken_cache_dir = str(Path(__file__).parent.parent.parent / ".tiktoken_cache")
+        
         # Set tiktoken cache directory environment variable
-        os.environ["TIKTOKEN_CACHE_DIR"] = TIKTOKEN_CACHE_DIR
+        os.environ["TIKTOKEN_CACHE_DIR"] = tiktoken_cache_dir
 
         embedding_params = {
             "model": config["model_name"],

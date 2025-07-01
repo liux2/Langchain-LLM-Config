@@ -28,7 +28,44 @@ def get_default_config_path() -> Path:
     return cwd_config
 
 
-def load_config(config_path: Optional[Union[str, Path]] = None, strict: bool = False) -> Dict[str, Any]:
+def _get_default_api_key(env_var: str) -> str:
+    """Get default API key for common environment variables."""
+    default_values = {
+        "OPENAI_API_KEY": "sk-demo-key-not-for-production",
+        "GEMINI_API_KEY": "demo-key-not-for-production",
+        "ANTHROPIC_API_KEY": "sk-ant-demo-key-not-for-production",
+    }
+    return default_values.get(env_var, "")
+
+
+def _process_environment_variable(
+    env_var: str,
+    env_value: Optional[str],
+    strict: bool,
+    service_config: Dict[str, Any],
+    key: str,
+) -> None:
+    """Process a single environment variable."""
+    if env_value is None:
+        if strict:
+            raise ValueError(f"Environment variable {env_var} not set")
+        else:
+            default_value = _get_default_api_key(env_var)
+            service_config[key] = default_value
+            warnings.warn(
+                f"Environment variable {env_var} not set. Using "
+                f"default value. Set {env_var} in your environment "
+                f"or .env file for production use.",
+                UserWarning,
+                stacklevel=2,
+            )
+    else:
+        service_config[key] = env_value
+
+
+def load_config(
+    config_path: Optional[Union[str, Path]] = None, strict: bool = False
+) -> Dict[str, Any]:
     """
     Load LLM configuration
 
@@ -41,7 +78,8 @@ def load_config(config_path: Optional[Union[str, Path]] = None, strict: bool = F
         Processed configuration dictionary
 
     Raises:
-        ValueError: Configuration file not found or environment variables not set (if strict=True)
+        ValueError: Configuration file not found or environment variables not
+                   set (if strict=True)
     """
     # Load environment variables from .env file
     dotenv_path = Path.cwd() / ".env"
@@ -74,26 +112,9 @@ def load_config(config_path: Optional[Union[str, Path]] = None, strict: bool = F
                 ):
                     env_var = value[2:-1]
                     env_value = os.getenv(env_var)
-                    if env_value is None:
-                        if strict:
-                            raise ValueError(f"Environment variable {env_var} not set")
-                        else:
-                            # Use default values for common API keys
-                            default_values = {
-                                "OPENAI_API_KEY": "sk-demo-key-not-for-production",
-                                "GEMINI_API_KEY": "demo-key-not-for-production",
-                                "ANTHROPIC_API_KEY": "sk-ant-demo-key-not-for-production",
-                            }
-                            default_value = default_values.get(env_var, "")
-                            service_config[key] = default_value
-                            warnings.warn(
-                                f"Environment variable {env_var} not set. Using default value. "
-                                f"Set {env_var} in your environment or .env file for production use.",
-                                UserWarning,
-                                stacklevel=2,
-                            )
-                    else:
-                        service_config[key] = env_value
+                    _process_environment_variable(
+                        env_var, env_value, strict, service_config, key
+                    )
 
     return llm_config
 
@@ -170,12 +191,15 @@ def init_config(config_path: Optional[Union[str, Path]] = None) -> Path:
                         "model_name": "gemini-pro",
                         "temperature": 0.7,
                         "max_tokens": 8192,
+                        "top_p": 1.0,
+                        "connect_timeout": 30,
+                        "model_kwargs": {},
                     },
                     "embeddings": {
                         "api_key": "${GEMINI_API_KEY}",
                         "model_name": "embedding-001",
                         "timeout": 30,
-                    }
+                    },
                 },
                 "infinity": {
                     "embeddings": {

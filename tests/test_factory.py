@@ -26,7 +26,9 @@ class TestFactoryFunctions:
     """Test factory functions"""
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_assistant_openai_provider(self, mock_load_config: MagicMock) -> None:
+    def test_create_assistant_openai_provider(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_assistant with OpenAI provider"""
         # Mock config
         mock_load_config.return_value = {
@@ -61,7 +63,9 @@ class TestFactoryFunctions:
         assert result.response_model == MockResponse
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_assistant_openai_provider_defaults(self, mock_load_config: MagicMock) -> None:
+    def test_create_assistant_openai_provider_defaults(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_assistant with OpenAI provider using defaults"""
         mock_load_config.return_value = {
             "default": {"chat_provider": "openai"},
@@ -77,7 +81,9 @@ class TestFactoryFunctions:
         assert result.response_model == MockResponse
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_assistant_gemini_provider(self, mock_load_config: MagicMock) -> None:
+    def test_create_assistant_gemini_provider(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_assistant with Gemini provider"""
         mock_load_config.return_value = {
             "default": {"chat_provider": "gemini"},
@@ -136,7 +142,9 @@ class TestFactoryFunctions:
         assert result.response_model == MockResponse
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_assistant_default_provider(self, mock_load_config: MagicMock) -> None:
+    def test_create_assistant_default_provider(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_assistant with default provider"""
         mock_load_config.return_value = {
             "default": {"chat_provider": "openai"},
@@ -152,7 +160,9 @@ class TestFactoryFunctions:
         assert result.response_model == MockResponse
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_assistant_with_custom_config_path(self, mock_load_config: MagicMock) -> None:
+    def test_create_assistant_with_custom_config_path(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_assistant with custom config path"""
         mock_load_config.return_value = {
             "default": {"chat_provider": "openai"},
@@ -170,7 +180,9 @@ class TestFactoryFunctions:
         mock_load_config.assert_called_once_with("/custom/path/api.yaml")
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_assistant_with_additional_kwargs(self, mock_load_config: MagicMock) -> None:
+    def test_create_assistant_with_additional_kwargs(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_assistant with additional kwargs"""
         mock_load_config.return_value = {
             "default": {"chat_provider": "openai"},
@@ -192,7 +204,9 @@ class TestFactoryFunctions:
 
     @patch("langchain_llm_config.factory.load_config")
     @patch("langchain_llm_config.factory.ChatStreaming")
-    def test_create_chat_streaming(self, mock_chat_streaming_class: MagicMock, mock_load_config: MagicMock) -> None:
+    def test_create_chat_streaming(
+        self, mock_chat_streaming_class: MagicMock, mock_load_config: MagicMock
+    ) -> None:
         """Test create_chat_streaming function"""
         mock_load_config.return_value = {
             "default": {"chat_provider": "openai"},
@@ -273,7 +287,9 @@ class TestFactoryFunctions:
         mock_load_config.assert_called_once_with("/custom/path/api.yaml")
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_embedding_provider_openai(self, mock_load_config: MagicMock) -> None:
+    def test_create_embedding_provider_openai(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_embedding_provider with OpenAI provider"""
         mock_load_config.return_value = {
             "default": {"embedding_provider": "openai"},
@@ -321,7 +337,9 @@ class TestFactoryFunctions:
         assert isinstance(result, VLLMEmbeddingProvider)
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_embedding_provider_infinity(self, mock_load_config: MagicMock) -> None:
+    def test_create_embedding_provider_infinity(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_embedding_provider with Infinity provider"""
         mock_load_config.return_value = {
             "default": {"embedding_provider": "infinity"},
@@ -343,7 +361,9 @@ class TestFactoryFunctions:
         assert isinstance(result, InfinityEmbeddingProvider)
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_embedding_provider_default(self, mock_load_config: MagicMock) -> None:
+    def test_create_embedding_provider_default(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_embedding_provider with default provider"""
         mock_load_config.return_value = {
             "default": {"embedding_provider": "openai"},
@@ -365,7 +385,9 @@ class TestFactoryFunctions:
         assert isinstance(result, OpenAIEmbeddingProvider)
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_embedding_provider_with_custom_config_path(self, mock_load_config: MagicMock) -> None:
+    def test_create_embedding_provider_with_custom_config_path(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_embedding_provider with custom config path"""
         mock_load_config.return_value = {
             "default": {"embedding_provider": "openai"},
@@ -390,7 +412,9 @@ class TestFactoryFunctions:
         mock_load_config.assert_called_once_with("/custom/path/api.yaml")
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_embedding_provider_with_additional_kwargs(self, mock_load_config: MagicMock) -> None:
+    def test_create_embedding_provider_with_additional_kwargs(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_embedding_provider with additional kwargs"""
         mock_load_config.return_value = {
             "default": {"embedding_provider": "openai"},
@@ -414,7 +438,9 @@ class TestFactoryFunctions:
         assert isinstance(result, OpenAIEmbeddingProvider)
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_embedding_provider_unsupported_provider(self, mock_load_config: MagicMock) -> None:
+    def test_create_embedding_provider_unsupported_provider(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_embedding_provider with unsupported provider"""
         mock_load_config.return_value = {
             "default": {"embedding_provider": "unsupported"},
@@ -425,7 +451,9 @@ class TestFactoryFunctions:
             create_embedding_provider(provider="unsupported")
 
     @patch("langchain_llm_config.factory.load_config")
-    def test_create_assistant_unsupported_provider(self, mock_load_config: MagicMock) -> None:
+    def test_create_assistant_unsupported_provider(
+        self, mock_load_config: MagicMock
+    ) -> None:
         """Test create_assistant with unsupported provider"""
         mock_load_config.return_value = {
             "default": {"chat_provider": "unsupported"},

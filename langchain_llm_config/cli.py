@@ -42,6 +42,56 @@ def validate_command(args: argparse.Namespace) -> int:
         return 1
 
 
+def _find_env_vars(obj: Any) -> set[str]:
+    """Find all environment variable references in a configuration object."""
+    env_vars_needed = set()
+
+    def _find_env_vars_recursive(obj: Any) -> None:
+        if isinstance(obj, dict):
+            for value in obj.values():
+                _find_env_vars_recursive(value)
+        elif isinstance(obj, list):
+            for item in obj:
+                _find_env_vars_recursive(item)
+        elif isinstance(obj, str) and obj.startswith("${") and obj.endswith("}"):
+            env_vars_needed.add(obj[2:-1])
+
+    _find_env_vars_recursive(obj)
+    return env_vars_needed
+
+
+def _create_env_content(env_vars: set[str]) -> str:
+    """Create the content for the .env file."""
+    env_content = "# Environment variables for langchain-llm-config\n"
+    env_content += "# Copy this file to .env and fill in your actual API keys\n\n"
+
+    for env_var in sorted(env_vars):
+        env_content += f"# {env_var} - Get your API key from the provider's website\n"
+        env_content += f"{env_var}=your-api-key-here\n\n"
+
+    return env_content
+
+
+def _print_success_message(env_file_path: Path, env_vars: set[str]) -> None:
+    """Print success message and next steps."""
+    success_message = (
+        f"✅ Created .env file at: {env_file_path}\n"
+        "\n📝 Next steps:\n"
+        "1. Edit the .env file and replace 'your-api-key-here' "
+        "with your actual API keys\n"
+        "2. Never commit the .env file to version control "
+        "(it should be in .gitignore)\n"
+        "3. The package will automatically load these environment variables\n"
+        "\n🔑 Environment variables needed:\n"
+    )
+
+    # Add environment variables to the message
+    for env_var in sorted(env_vars):
+        success_message += f"   • {env_var}\n"
+
+    print(success_message)
+
+
 def setup_env_command(args: argparse.Namespace) -> int:
     """Set up environment variables and create .env file"""
     try:
@@ -57,19 +107,7 @@ def setup_env_command(args: argparse.Namespace) -> int:
         config = load_config(str(config_path), strict=False)
 
         # Find all environment variable references
-        env_vars_needed = set()
-
-        def find_env_vars(obj: Any) -> None:
-            if isinstance(obj, dict):
-                for value in obj.values():
-                    find_env_vars(value)
-            elif isinstance(obj, list):
-                for item in obj:
-                    find_env_vars(item)
-            elif isinstance(obj, str) and obj.startswith("${") and obj.endswith("}"):
-                env_vars_needed.add(obj[2:-1])
-
-        find_env_vars(config)
+        env_vars_needed = _find_env_vars(config)
 
         if not env_vars_needed:
             print("✅ No environment variables needed in your configuration")
@@ -84,32 +122,12 @@ def setup_env_command(args: argparse.Namespace) -> int:
             return 1
 
         # Create .env file with placeholders
-        env_content = "# Environment variables for langchain-llm-config\n"
-        env_content += "# Copy this file to .env and fill in your actual API keys\n\n"
-
-        for env_var in sorted(env_vars_needed):
-            env_content += (
-                f"# {env_var} - Get your API key from the provider's website\n"
-            )
-            env_content += f"{env_var}=your-api-key-here\n\n"
+        env_content = _create_env_content(env_vars_needed)
 
         with open(env_file_path, "w") as f:
             f.write(env_content)
 
-        print(f"✅ Created .env file at: {env_file_path}")
-        print("\n📝 Next steps:")
-        print(
-            "1. Edit the .env file and replace 'your-api-key-here' with your actual API keys"
-        )
-        print(
-            "2. Never commit the .env file to version control (it should be in .gitignore)"
-        )
-        print("3. The package will automatically load these environment variables")
-
-        print(f"\n🔑 Environment variables needed:")
-        for env_var in sorted(env_vars_needed):
-            print(f"   • {env_var}")
-
+        _print_success_message(env_file_path, env_vars_needed)
         return 0
 
     except Exception as e:
@@ -119,34 +137,28 @@ def setup_env_command(args: argparse.Namespace) -> int:
 
 def info_command(args: argparse.Namespace) -> int:
     """Show information about the package and supported providers"""
-    print("🤖 Langchain LLM Config")
-    print("=" * 50)
-    print("\n📦 Supported Chat Providers:")
-    print("  • OpenAI - GPT models via OpenAI API")
-    print("  • VLLM - Local and remote VLLM servers")
-    print("  • Gemini - Google Gemini models")
+    info_prompt = (
+        "🤖 Langchain LLM Config\n"
+        "==================================================\n"
+        "\n📦 Supported Chat Providers:\n"
+        "  • OpenAI - GPT models via OpenAI API\n"
+        "  • VLLM - Local and remote VLLM servers\n"
+        "  • Gemini - Google Gemini models\n"
+        "\n🔗 Supported Embedding Providers:\n"
+        "  • OpenAI - text-embedding models\n"
+        "  • VLLM - Local embedding models\n"
+        "  • Infinity - Fast embedding inference\n"
+        "\n🚀 Quick Start:\n"
+        "  1. llm-config init                     # Initialize config file\n"
+        "  2. llm-config setup-env                # Set up environment variables\n"
+        "  3. Edit .env with your API keys, api.yaml with your provider settings\n"
+        "  4. pip install langchain-llm-config                                    "
+        " # Install package\n"
+        "  5. Use in your code:\n"
+        "     from langchain_llm_config import create_assistant"
+    )
 
-    print("\n🔗 Supported Embedding Providers:")
-    print("  • OpenAI - text-embedding models")
-    print("  • VLLM - Local embedding models")
-    print("  • Infinity - Fast embedding inference")
-
-    print("\n🚀 Quick Start:")
-    print(
-        "  1. llm-config init                                                      # Initialize config file"
-    )
-    print(
-        "  2. llm-config setup-env                                                 # Set up environment variables"
-    )
-    print(
-        "  3. Edit .env with your API keys, api.yaml with your provider settings   # Configure API keys and provider settings"
-    )
-    print(
-        "  4. pip install langchain-llm-config                                     # Install package"
-    )
-    print("  5. Use in your code:")
-    print("     from langchain_llm_config import create_assistant")
-
+    print(info_prompt)
     return 0
 
 

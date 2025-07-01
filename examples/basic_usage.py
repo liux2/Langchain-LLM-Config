@@ -29,22 +29,29 @@ async def assistant_example() -> None:
     # Create an assistant with structured output
     assistant = create_assistant(
         response_model=ArticleAnalysis,
-        system_prompt="You are a professional article analyzer. Provide accurate and concise analysis.",
+        system_prompt=(
+            "You are a professional article analyzer. "
+            "Provide accurate and concise analysis."
+        ),
         provider="openai",  # Can be "openai", "vllm", or "gemini"
     )
 
     # Sample article
-    article = """
-    Artificial Intelligence (AI) has emerged as one of the most transformative technologies of the 21st century. 
-    From virtual assistants like Siri and Alexa to advanced machine learning algorithms that power recommendation 
-    systems, AI is reshaping how we live and work. Recent breakthroughs in large language models have demonstrated 
-    remarkable capabilities in natural language processing, enabling more sophisticated human-computer interactions.
-    
-    However, the rapid advancement of AI also raises important questions about privacy, job displacement, and 
-    ethical considerations. As AI systems become more capable, society must grapple with how to ensure these 
-    technologies benefit humanity while minimizing potential risks. The future of AI depends not just on 
-    technological innovation, but also on thoughtful governance and responsible development practices.
-    """
+    article = (
+        "Artificial Intelligence (AI) has emerged as one of the most transformative "
+        "technologies of the 21st century. From virtual assistants like Siri and Alexa "
+        "to advanced machine learning algorithms that power recommendation "
+        "systems, AI is reshaping how we live and work. Recent breakthroughs in large "
+        "language models have demonstrated remarkable capabilities in natural language "
+        "processing, enabling more sophisticated human-computer interactions. "
+        "\n"
+        "However, the rapid advancement of AI also raises important questions about "
+        "privacy, job displacement, and ethical considerations. As AI systems become "
+        "more capable, society must grapple with how to ensure these technologies "
+        "benefit humanity while minimizing potential risks. The future of AI depends "
+        "not just on technological innovation, but also on thoughtful governance and "
+        "responsible development practices."
+    )
 
     print("📝 Analyzing article...")
     result = await assistant.ask(f"Please analyze this article: {article}")
@@ -74,7 +81,7 @@ async def embedding_example() -> None:
     print("📝 Generating embeddings...")
     embeddings = await embedding_provider.embed_texts_async(texts)
 
-    print(f"\n📊 Embedding Results:")
+    print("\n📊 Embedding Results:")
     print(f"Generated {len(embeddings)} embeddings")
     print(f"Each embedding has {len(embeddings[0])} dimensions")
 

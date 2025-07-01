@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Type
 
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 from ..base import Assistant
 
@@ -41,16 +41,17 @@ class GeminiAssistant(Assistant):
         api_key = config.get("api_key")
         top_p = config.get("top_p", 1.0)
         connect_timeout = config.get("connect_timeout", 30)
-        read_timeout = config.get("read_timeout", 60)
         model_kwargs = config.get("model_kwargs", {})
 
         # 初始化Gemini LLM
         self.llm: Any = ChatGoogleGenerativeAI(
             model=model_name,
             temperature=temperature,
-            max_output_tokens=max_tokens,
+            max_output_tokens=max_tokens,  # type: ignore[call-arg]
             top_p=top_p,
-            google_api_key=api_key or os.getenv("GOOGLE_API_KEY", "dummy-key"),
+            google_api_key=SecretStr(
+                api_key or os.getenv("GEMINI_API_KEY", "dummy-key") or ""
+            ),  # type: ignore[call-arg]
             timeout=float(connect_timeout) if connect_timeout else None,
             **model_kwargs,
         )

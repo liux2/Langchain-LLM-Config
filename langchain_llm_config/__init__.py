@@ -8,13 +8,6 @@ including OpenAI, VLLM, Gemini, and Infinity for both chat assistants and embedd
 import os
 from pathlib import Path
 
-__version__ = "0.1.0"
-__author__ = "Xingbang Liu"
-__email__ = "xingbangliu48@gmail.com"
-
-# Define the tiktoken cache directory path
-TIKTOKEN_CACHE_DIR = str(Path(__file__).parent / ".tiktoken_cache")
-
 # Import base classes for extensibility
 from .assistant.base import Assistant
 from .assistant.chat_streaming import ChatStreaming
@@ -40,6 +33,13 @@ from .factory import (
     create_chat_streaming,
     create_embedding_provider,
 )
+
+__version__ = "0.1.0"
+__author__ = "Xingbang Liu"
+__email__ = "xingbangliu48@gmail.com"
+
+# Define the tiktoken cache directory path
+TIKTOKEN_CACHE_DIR = str(Path(__file__).parent / ".tiktoken_cache")
 
 __all__ = [
     # Constants

@@ -35,10 +35,12 @@ class ChatStreaming:
         self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            max_tokens=max_tokens,
+            max_tokens=max_tokens,  # type: ignore[call-arg]
             base_url=base_url,
             top_p=top_p,
-            api_key=SecretStr(api_key or os.getenv("OPENAI_API_KEY", "dummy-key") or ""),
+            api_key=SecretStr(
+                api_key or os.getenv("OPENAI_API_KEY", "dummy-key") or ""
+            ),
             model_kwargs=model_kwargs or {},
             timeout=(connect_timeout, read_timeout),
         )
@@ -157,7 +159,7 @@ class ChatStreaming:
 
             # Yield final result
             processing_time = time.time() - start_time
-            yield {
+            yield {  # type: ignore[unreachable]
                 "type": "final",
                 "content": full_response,
                 "processing_time": processing_time,
@@ -182,11 +184,13 @@ class ChatStreaming:
     ) -> AsyncGenerator[str, None]:
         """
         Stream chat response as simple text chunks
-        
+
         This is a simplified version that yields just the text content
         """
-        async for chunk in self.chat_stream(query, extra_system_prompt, context, **kwargs):
+        async for chunk in self.chat_stream(
+            query, extra_system_prompt, context, **kwargs
+        ):
             if chunk["type"] == "stream":
                 yield chunk["content"]
-            if chunk["type"] == "error":
+            elif chunk["type"] == "error":
                 raise ValueError(chunk["error"])

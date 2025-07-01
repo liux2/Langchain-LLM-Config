@@ -58,10 +58,12 @@ class Assistant:
         self.llm: Any = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            max_tokens=max_tokens,
+            max_tokens=max_tokens,  # type: ignore[call-arg]
             base_url=base_url,
             top_p=top_p,
-            api_key=SecretStr(api_key or os.getenv("OPENAI_API_KEY", "dummy-key") or ""),
+            api_key=SecretStr(
+                api_key or os.getenv("OPENAI_API_KEY", "dummy-key") or ""
+            ),
             model_kwargs=model_kwargs or {},
             timeout=(connect_timeout, read_timeout),
         )
@@ -93,7 +95,8 @@ class Assistant:
                 "请严格按照以下格式提供您的回答。您的回答必须：\n"
                 "1. 完全符合指定的JSON格式\n"
                 "2. 不要添加任何额外的解释或注释\n"
-                "3. 对于有默认值的字段（如intension、language），如果不知道具体值，请直接省略该字段，不要使用null\n"
+                "3. 对于有默认值的字段（如intension、language），如果不知道具体值，"
+                "请直接省略该字段，不要使用null\n"
                 "4. 对于没有默认值的可选字段，如果确实没有值，才使用null\n"
                 "5. 必须使用标准ASCII字符作为JSON语法（如 : 而不是 ：）\n"
                 "格式要求：\n"
@@ -108,7 +111,10 @@ class Assistant:
 
         # 构建链
         from langchain_core.runnables import Runnable
-        self.chain: Runnable = RunnablePassthrough() | self.prompt | self.llm | self.parser
+
+        self.chain: Runnable = (
+            RunnablePassthrough() | self.prompt | self.llm | self.parser
+        )
 
     def ask(
         self,

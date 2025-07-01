@@ -44,7 +44,7 @@ def setup_environment() -> bool:
     # Try to load configuration
     try:
         print("📖 Loading configuration...")
-        config = load_config(str(config_path), strict=False)
+        load_config(str(config_path), strict=False)
         print("✅ Configuration loaded successfully")
         return True
     except Exception as e:
@@ -64,7 +64,10 @@ def example_chat_assistant_sync() -> None:
         assistant = create_assistant(
             response_model=ChatResponse,
             provider="openai",  # or "gemini", "vllm"
-            system_prompt="You are a helpful AI assistant. Provide clear and concise responses.",
+            system_prompt=(
+                "You are a helpful AI assistant. "
+                "Provide clear and concise responses."
+            ),
         )
 
         # Example conversation
@@ -99,7 +102,10 @@ async def example_chat_assistant_async() -> None:
         assistant = create_assistant(
             response_model=ChatResponse,
             provider="openai",  # or "gemini", "vllm"
-            system_prompt="You are a helpful AI assistant. Provide clear and concise responses.",
+            system_prompt=(
+                "You are a helpful AI assistant. "
+                "Provide clear and concise responses."
+            ),
         )
 
         # Example conversation
@@ -231,14 +237,18 @@ def main() -> None:
     example_embedding_provider_sync()
 
     print("\n✅ Synchronous examples completed!")
-    print("\n💡 Tips:")
-    print("• Use .env file for API keys (never commit to version control)")
-    print("• Set strict=False in load_config() for development")
-    print("• Use strict=True in production to catch missing environment variables")
-    print("• Use ask() for synchronous calls, ask_async() for asynchronous calls")
-    print(
-        "• Use embed_texts() for synchronous calls, embed_texts_async() for asynchronous calls"
+
+    tips_message = (
+        "\n💡 Tips:\n"
+        "• Use .env file for API keys (never commit to version control)\n"
+        "• Set strict=False in load_config() for development\n"
+        "• Use strict=True in production to catch missing environment variables\n"
+        "• Use ask() for synchronous calls, ask_async() for asynchronous calls\n"
+        "• Use embed_texts() for synchronous calls, embed_texts_async() "
+        "for asynchronous calls"
     )
+
+    print(tips_message)
 
 
 async def main_async() -> None:
@@ -262,14 +272,18 @@ async def main_async() -> None:
     await example_embedding_provider_async()
 
     print("\n✅ Asynchronous examples completed!")
-    print("\n💡 Tips:")
-    print("• Use .env file for API keys (never commit to version control)")
-    print("• Set strict=False in load_config() for development")
-    print("• Use strict=True in production to catch missing environment variables")
-    print("• Use ask() for synchronous calls, ask_async() for asynchronous calls")
-    print(
-        "• Use embed_texts() for synchronous calls, embed_texts_async() for asynchronous calls"
+
+    tips_message = (
+        "\n💡 Tips:\n"
+        "• Use .env file for API keys (never commit to version control)\n"
+        "• Set strict=False in load_config() for development\n"
+        "• Use strict=True in production to catch missing environment variables\n"
+        "• Use ask() for synchronous calls, ask_async() for asynchronous calls\n"
+        "• Use embed_texts() for synchronous calls, embed_texts_async() "
+        "for asynchronous calls"
     )
+
+    print(tips_message)
 
 
 if __name__ == "__main__":

@@ -60,7 +60,9 @@ class TestAssistantBase:
         assert assistant.llm is not None
 
     @patch("langchain_llm_config.assistant.base.ChatOpenAI")
-    def test_assistant_initialization_with_env_key(self, mock_chat_openai: MagicMock) -> None:
+    def test_assistant_initialization_with_env_key(
+        self, mock_chat_openai: MagicMock
+    ) -> None:
         """Test assistant initialization using environment variable for API key"""
         mock_llm = MagicMock()
         mock_chat_openai.return_value = mock_llm
@@ -71,10 +73,15 @@ class TestAssistantBase:
         # Verify ChatOpenAI was called with env key
         mock_chat_openai.assert_called_once()
         call_args = mock_chat_openai.call_args
-        assert call_args[1]["api_key"] == "env-test-key"
+        # Check that SecretStr was used with the correct value
+        secret_str = call_args[1]["api_key"]
+        assert hasattr(secret_str, "get_secret_value")
+        assert secret_str.get_secret_value() == "env-test-key"
 
     @patch("langchain_llm_config.assistant.base.ChatOpenAI")
-    def test_assistant_initialization_with_dummy_key(self, mock_chat_openai: MagicMock) -> None:
+    def test_assistant_initialization_with_dummy_key(
+        self, mock_chat_openai: MagicMock
+    ) -> None:
         """Test assistant initialization with dummy key when no env var"""
         mock_llm = MagicMock()
         mock_chat_openai.return_value = mock_llm
@@ -85,7 +92,10 @@ class TestAssistantBase:
         # Verify ChatOpenAI was called with dummy key
         mock_chat_openai.assert_called_once()
         call_args = mock_chat_openai.call_args
-        assert call_args[1]["api_key"] == "dummy-key"
+        # Check that SecretStr was used with the correct value
+        secret_str = call_args[1]["api_key"]
+        assert hasattr(secret_str, "get_secret_value")
+        assert secret_str.get_secret_value() == "dummy-key"
 
     def test_setup_prompt_and_chain(self) -> None:
         """Test prompt and chain setup"""
@@ -126,7 +136,9 @@ class TestAssistantBase:
         mock_chain.invoke.assert_called_once()
 
     @patch("langchain_llm_config.assistant.base.RunnablePassthrough")
-    def test_ask_method_with_extra_system_prompt(self, mock_passthrough: MagicMock) -> None:
+    def test_ask_method_with_extra_system_prompt(
+        self, mock_passthrough: MagicMock
+    ) -> None:
         """Test ask method with extra system prompt"""
         mock_chain = MagicMock()
         mock_passthrough.return_value.__or__ = MagicMock(return_value=mock_chain)
@@ -200,7 +212,9 @@ class TestAssistantBase:
 
     @patch("langchain_llm_config.assistant.base.RunnablePassthrough")
     @pytest.mark.asyncio
-    async def test_ask_async_method_with_extra_system_prompt(self, mock_passthrough: MagicMock) -> None:
+    async def test_ask_async_method_with_extra_system_prompt(
+        self, mock_passthrough: MagicMock
+    ) -> None:
         """Test ask_async method with extra system prompt"""
         mock_chain = MagicMock()
         mock_passthrough.return_value.__or__ = MagicMock(return_value=mock_chain)
@@ -222,7 +236,9 @@ class TestAssistantBase:
 
     @patch("langchain_llm_config.assistant.base.RunnablePassthrough")
     @pytest.mark.asyncio
-    async def test_ask_async_method_exception_handling(self, mock_passthrough: MagicMock) -> None:
+    async def test_ask_async_method_exception_handling(
+        self, mock_passthrough: MagicMock
+    ) -> None:
         """Test ask_async method exception handling"""
         mock_chain = MagicMock()
         mock_passthrough.return_value.__or__ = MagicMock(return_value=mock_chain)
@@ -263,7 +279,9 @@ class TestChatStreaming:
         assert streaming.prompt is not None
 
     @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
-    def test_chat_streaming_initialization_defaults(self, mock_chat_openai: MagicMock) -> None:
+    def test_chat_streaming_initialization_defaults(
+        self, mock_chat_openai: MagicMock
+    ) -> None:
         """Test chat streaming initialization with defaults"""
         mock_llm = MagicMock()
         mock_chat_openai.return_value = mock_llm
@@ -289,7 +307,9 @@ class TestChatStreaming:
 
     @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
     @patch("time.time")
-    def test_chat_method_success(self, mock_time: MagicMock, mock_chat_openai: MagicMock) -> None:
+    def test_chat_method_success(
+        self, mock_time: MagicMock, mock_chat_openai: MagicMock
+    ) -> None:
         """Test successful chat method execution"""
         mock_llm = MagicMock()
         mock_chat_openai.return_value = mock_llm
@@ -312,7 +332,9 @@ class TestChatStreaming:
 
     @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
     @patch("time.time")
-    def test_chat_method_with_extra_system_prompt(self, mock_time: MagicMock, mock_chat_openai: MagicMock) -> None:
+    def test_chat_method_with_extra_system_prompt(
+        self, mock_time: MagicMock, mock_chat_openai: MagicMock
+    ) -> None:
         """Test chat method with extra system prompt"""
         mock_llm = MagicMock()
         mock_chat_openai.return_value = mock_llm
@@ -335,7 +357,9 @@ class TestChatStreaming:
 
     @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
     @patch("time.time")
-    def test_chat_method_with_context(self, mock_time: MagicMock, mock_chat_openai: MagicMock) -> None:
+    def test_chat_method_with_context(
+        self, mock_time: MagicMock, mock_chat_openai: MagicMock
+    ) -> None:
         """Test chat method with context"""
         mock_llm = MagicMock()
         mock_chat_openai.return_value = mock_llm
@@ -356,7 +380,9 @@ class TestChatStreaming:
 
     @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
     @patch("time.time")
-    def test_chat_method_exception_handling(self, mock_time: MagicMock, mock_chat_openai: MagicMock) -> None:
+    def test_chat_method_exception_handling(
+        self, mock_time: MagicMock, mock_chat_openai: MagicMock
+    ) -> None:
         """Test chat method exception handling"""
         mock_llm = MagicMock()
         mock_chat_openai.return_value = mock_llm
@@ -371,7 +397,9 @@ class TestChatStreaming:
 
     @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
     @patch("time.time")
-    def test_chat_stream_method_success(self, mock_time: MagicMock, mock_chat_openai: MagicMock) -> None:
+    def test_chat_stream_method_success(
+        self, mock_time: MagicMock, mock_chat_openai: MagicMock
+    ) -> None:
         """Test successful chat_stream method execution"""
         mock_llm = MagicMock()
         mock_chat_openai.return_value = mock_llm
@@ -461,7 +489,9 @@ class TestChatStreaming:
 
     @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
     @patch("time.time")
-    def test_chat_stream_method_exception_handling(self, mock_time: MagicMock, mock_chat_openai: MagicMock) -> None:
+    def test_chat_stream_method_exception_handling(
+        self, mock_time: MagicMock, mock_chat_openai: MagicMock
+    ) -> None:
         """Test chat_stream method exception handling"""
         mock_llm = MagicMock()
         mock_chat_openai.return_value = mock_llm
@@ -472,8 +502,8 @@ class TestChatStreaming:
         async def mock_generator(*args: Any, **kwargs: Any) -> Any:
             raise Exception("Stream test error")
 
-        # mock_llm.astream should *return* the async generator, not be one itself
-        mock_llm.astream.return_value = mock_generator()
+        # mock_llm.astream should return the async generator function
+        mock_llm.astream = mock_generator
 
         streaming = ChatStreaming(model_name="test-model")
 
@@ -493,7 +523,9 @@ class TestChatStreaming:
 
     @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
     @patch("time.time")
-    def test_chat_stream_method_empty_response(self, mock_time: MagicMock, mock_chat_openai: MagicMock) -> None:
+    def test_chat_stream_method_empty_response(
+        self, mock_time: MagicMock, mock_chat_openai: MagicMock
+    ) -> None:
         """Test chat_stream method with empty response"""
         mock_llm = MagicMock()
         mock_chat_openai.return_value = mock_llm
@@ -502,8 +534,9 @@ class TestChatStreaming:
 
         # Mock empty response
         async def mock_stream(*args: Any, **kwargs: Any) -> Any:
-            # Empty generator
-            return
+            # Empty generator - use yield to make it a proper async generator
+            if False:  # This will never be True, so no chunks will be yielded
+                yield None
 
         mock_llm.astream = mock_stream
 

@@ -65,7 +65,7 @@ def test_config_file() -> Generator[str, None, None]:
                     "api_key": "test-key-not-for-production",
                     "model_name": "embedding-001",
                     "timeout": 30,
-                }
+                },
             },
             "infinity": {
                 "embeddings": {

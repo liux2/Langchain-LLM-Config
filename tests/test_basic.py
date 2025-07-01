@@ -41,7 +41,9 @@ class TestConfig:
         assert "openai" in config
         assert "vllm" in config
 
-    def test_load_config_strict_mode_missing_env_var(self, test_config_file: str) -> None:
+    def test_load_config_strict_mode_missing_env_var(
+        self, test_config_file: str
+    ) -> None:
         """Test that strict mode raises error for missing environment variables"""
         # Create a config with environment variable references
         import yaml
@@ -67,7 +69,9 @@ class TestConfig:
         ):
             load_config(test_config_file, strict=True)
 
-    def test_load_config_non_strict_mode_missing_env_var(self, test_config_file: str) -> None:
+    def test_load_config_non_strict_mode_missing_env_var(
+        self, test_config_file: str
+    ) -> None:
         """Test that non-strict mode uses default values for missing environment variables"""
         # Create a config with environment variable references
         import yaml
@@ -91,7 +95,9 @@ class TestConfig:
         config = load_config(test_config_file, strict=False)
         assert config["gemini"]["chat"]["api_key"] == "demo-key-not-for-production"
 
-    def test_load_config_with_env_vars(self, test_config_file: str, mock_env_vars: Any) -> None:
+    def test_load_config_with_env_vars(
+        self, test_config_file: str, mock_env_vars: Any
+    ) -> None:
         """Test loading config with environment variables set"""
         # Create a config with environment variable references
         import yaml

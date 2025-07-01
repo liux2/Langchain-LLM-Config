@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Type, Union
 
 from pydantic import BaseModel
 
@@ -8,6 +8,7 @@ from .assistant.providers.gemini import GeminiAssistant
 from .assistant.providers.vllm import VLLMAssistant
 from .config import load_config
 from .embeddings.base import BaseEmbeddingProvider
+from .embeddings.providers.gemini import GeminiEmbeddingProvider
 from .embeddings.providers.infinity import InfinityEmbeddingProvider
 from .embeddings.providers.openai import OpenAIEmbeddingProvider
 from .embeddings.providers.vllm import VLLMEmbeddingProvider
@@ -19,11 +20,20 @@ _ASSISTANT_PROVIDERS = {
     "gemini": GeminiAssistant,
 }
 
+# Type alias for concrete embedding providers
+EmbeddingProviderType = Union[
+    OpenAIEmbeddingProvider,
+    InfinityEmbeddingProvider,
+    VLLMEmbeddingProvider,
+    GeminiEmbeddingProvider,
+]
+
 # 嵌入提供者映射
-_EMBEDDING_PROVIDERS = {
+_EMBEDDING_PROVIDERS: Dict[str, Type[EmbeddingProviderType]] = {
     "openai": OpenAIEmbeddingProvider,
     "infinity": InfinityEmbeddingProvider,
     "vllm": VLLMEmbeddingProvider,
+    "gemini": GeminiEmbeddingProvider,
 }
 
 
@@ -136,7 +146,7 @@ def create_chat_streaming(
 
 def create_embedding_provider(
     provider: Optional[str] = None, config_path: Optional[str] = None, **kwargs: Any
-) -> Any:
+) -> EmbeddingProviderType:
     """
     创建嵌入提供者实例
 
@@ -156,6 +166,6 @@ def create_embedding_provider(
     if provider not in _EMBEDDING_PROVIDERS:
         raise ValueError(f"未知的嵌入提供者: {provider}")
 
-    provider_class = _EMBEDDING_PROVIDERS[provider]
+    provider_class: Type[EmbeddingProviderType] = _EMBEDDING_PROVIDERS[provider]
 
     return provider_class(config=config[provider]["embeddings"], **kwargs)

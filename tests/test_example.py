@@ -87,7 +87,9 @@ class TestExample:
             assert "Config error" in mock_stdout.getvalue()
 
     @patch("langchain_llm_config.example.create_assistant")
-    def test_example_chat_assistant_sync_success(self, mock_create_assistant: MagicMock) -> None:
+    def test_example_chat_assistant_sync_success(
+        self, mock_create_assistant: MagicMock
+    ) -> None:
         """Test successful example_chat_assistant_sync"""
         # Mock assistant
         mock_assistant = MagicMock()
@@ -114,7 +116,9 @@ class TestExample:
         assert "suggestions" in output.lower() or "💡" in output
 
     @patch("langchain_llm_config.example.create_assistant")
-    def test_example_chat_assistant_sync_error(self, mock_create_assistant: MagicMock) -> None:
+    def test_example_chat_assistant_sync_error(
+        self, mock_create_assistant: MagicMock
+    ) -> None:
         """Test example_chat_assistant_sync with error"""
         mock_create_assistant.side_effect = Exception("API key error")
 
@@ -130,7 +134,9 @@ class TestExample:
 
     @patch("langchain_llm_config.example.create_assistant")
     @pytest.mark.asyncio
-    async def test_example_chat_assistant_async_success(self, mock_create_assistant: MagicMock) -> None:
+    async def test_example_chat_assistant_async_success(
+        self, mock_create_assistant: MagicMock
+    ) -> None:
         """Test successful example_chat_assistant_async"""
         # Mock assistant
         mock_assistant = MagicMock()
@@ -160,7 +166,9 @@ class TestExample:
 
     @patch("langchain_llm_config.example.create_assistant")
     @pytest.mark.asyncio
-    async def test_example_chat_assistant_async_error(self, mock_create_assistant: MagicMock) -> None:
+    async def test_example_chat_assistant_async_error(
+        self, mock_create_assistant: MagicMock
+    ) -> None:
         """Test example_chat_assistant_async with error"""
         mock_create_assistant.side_effect = Exception("API key error")
 
@@ -206,7 +214,9 @@ class TestExample:
         assert "🔍 Similarity between texts 1 and 2: 0.500" in output
 
     @patch("langchain_llm_config.example.create_embedding_provider")
-    def test_example_embedding_provider_sync_error(self, mock_create_provider: MagicMock) -> None:
+    def test_example_embedding_provider_sync_error(
+        self, mock_create_provider: MagicMock
+    ) -> None:
         """Test example_embedding_provider_sync with error"""
         mock_create_provider.side_effect = Exception("API key error")
 
@@ -256,7 +266,9 @@ class TestExample:
 
     @patch("langchain_llm_config.example.create_embedding_provider")
     @pytest.mark.asyncio
-    async def test_example_embedding_provider_async_error(self, mock_create_provider: MagicMock) -> None:
+    async def test_example_embedding_provider_async_error(
+        self, mock_create_provider: MagicMock
+    ) -> None:
         """Test example_embedding_provider_async with error"""
         mock_create_provider.side_effect = Exception("API key error")
 
@@ -273,7 +285,9 @@ class TestExample:
     @patch("langchain_llm_config.example.setup_environment")
     @patch("langchain_llm_config.example.example_chat_assistant_sync")
     @patch("langchain_llm_config.example.example_embedding_provider_sync")
-    def test_main_success(self, mock_embedding: MagicMock, mock_chat: MagicMock, mock_setup: MagicMock) -> None:
+    def test_main_success(
+        self, mock_embedding: MagicMock, mock_chat: MagicMock, mock_setup: MagicMock
+    ) -> None:
         """Test successful main function"""
         mock_setup.return_value = True
 
@@ -312,7 +326,9 @@ class TestExample:
     @patch("langchain_llm_config.example.example_chat_assistant_async")
     @patch("langchain_llm_config.example.example_embedding_provider_async")
     @pytest.mark.asyncio
-    async def test_main_async_success(self, mock_embedding: MagicMock, mock_chat: MagicMock, mock_setup: MagicMock) -> None:
+    async def test_main_async_success(
+        self, mock_embedding: MagicMock, mock_chat: MagicMock, mock_setup: MagicMock
+    ) -> None:
         """Test successful main_async function"""
         mock_setup.return_value = True
 
@@ -348,7 +364,9 @@ class TestExample:
         assert "3. Edit .env file with your API keys" in output
         assert "4. Run this example again" in output
 
-    def test_example_embedding_provider_sync_insufficient_embeddings(self, tmp_path: Path) -> None:
+    def test_example_embedding_provider_sync_insufficient_embeddings(
+        self, tmp_path: Path
+    ) -> None:
         """Test example_embedding_provider_sync with insufficient embeddings for similarity calculation"""
         with patch(
             "langchain_llm_config.example.create_embedding_provider"
