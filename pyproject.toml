@@ -54,6 +54,8 @@ dev = [
     "mypy>=1.0.0",
     "build>=1.2.2.post1",
     "twine>=6.1.0",
+    "types-pyyaml>=6.0.12.20250516",
+    "pytest-mypy>=1.0.1",
 ]
 all = [
     "google-generativeai>=0.3.0",
@@ -123,6 +125,8 @@ module = [
     "langchain.*",
     "openai.*",
     "typing_extensions",
+    "pytest.*",
+    "pytest",
 ]
 ignore_missing_imports = true
 
@@ -158,5 +162,3 @@ testpaths = ["tests"]
 
 [tool.uv.sources]
 langchain-llm-config = { workspace = true }
-
-

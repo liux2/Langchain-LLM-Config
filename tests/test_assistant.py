@@ -68,7 +68,7 @@ class TestAssistantBase:
         mock_chat_openai.return_value = mock_llm
 
         with patch.dict("os.environ", {"OPENAI_API_KEY": "env-test-key"}):
-            assistant = MockTestAssistant(api_key=None)
+            _ = MockTestAssistant(api_key=None)
 
         # Verify ChatOpenAI was called with env key
         mock_chat_openai.assert_called_once()
@@ -87,7 +87,7 @@ class TestAssistantBase:
         mock_chat_openai.return_value = mock_llm
 
         with patch.dict("os.environ", {}, clear=True):
-            assistant = MockTestAssistant(api_key=None)
+            _ = MockTestAssistant(api_key=None)
 
         # Verify ChatOpenAI was called with dummy key
         mock_chat_openai.assert_called_once()
@@ -150,7 +150,7 @@ class TestAssistantBase:
         assistant = MockTestAssistant(system_prompt="Base prompt")
         assistant.chain = mock_chain
 
-        result = assistant.ask("test question", extra_system_prompt="Extra prompt")
+        _ = assistant.ask("test question", extra_system_prompt="Extra prompt")
 
         # Verify the chain was called with combined system prompt
         call_args = mock_chain.invoke.call_args[0][0]
@@ -169,7 +169,7 @@ class TestAssistantBase:
         assistant = MockTestAssistant()
         assistant.chain = mock_chain
 
-        result = assistant.ask("test question", context="test context")
+        _ = assistant.ask("test question", context="test context")
 
         # Verify the chain was called with context
         call_args = mock_chain.invoke.call_args[0][0]
@@ -189,7 +189,7 @@ class TestAssistantBase:
             assistant.ask("test question")
 
     @patch("langchain_llm_config.assistant.base.RunnablePassthrough")
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_ask_async_method_success(self, mock_passthrough: MagicMock) -> None:
         """Test successful ask_async method execution"""
         mock_chain = MagicMock()
@@ -211,7 +211,7 @@ class TestAssistantBase:
         mock_chain.ainvoke.assert_called_once()
 
     @patch("langchain_llm_config.assistant.base.RunnablePassthrough")
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_ask_async_method_with_extra_system_prompt(
         self, mock_passthrough: MagicMock
     ) -> None:
@@ -226,7 +226,7 @@ class TestAssistantBase:
         assistant = MockTestAssistant(system_prompt="Base prompt")
         assistant.chain = mock_chain
 
-        result = await assistant.ask_async(
+        _ = await assistant.ask_async(
             "test question", extra_system_prompt="Extra prompt"
         )
 
@@ -235,7 +235,7 @@ class TestAssistantBase:
         assert call_args["system_prompt"] == "Base prompt\nExtra prompt"
 
     @patch("langchain_llm_config.assistant.base.RunnablePassthrough")
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_ask_async_method_exception_handling(
         self, mock_passthrough: MagicMock
     ) -> None:
@@ -347,7 +347,7 @@ class TestChatStreaming:
 
         streaming = ChatStreaming(model_name="test-model", system_prompt="Base prompt")
 
-        result = asyncio.run(
+        _ = asyncio.run(
             streaming.chat("test question", extra_system_prompt="Extra prompt")
         )
 
@@ -372,7 +372,7 @@ class TestChatStreaming:
 
         streaming = ChatStreaming(model_name="test-model")
 
-        result = asyncio.run(streaming.chat("test question", context="test context"))
+        _ = asyncio.run(streaming.chat("test question", context="test context"))
 
         # Verify the LLM was called with context
         call_args = mock_llm.ainvoke.call_args[0][0]

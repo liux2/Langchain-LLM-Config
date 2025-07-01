@@ -169,7 +169,11 @@ class TestConfigFunctions:
     def test_init_config_with_template(self, tmp_path: Path) -> None:
         """Test init_config with existing template"""
         # Create a template file in the expected location
-        template_dir = Path(__file__).parent.parent / "langchain_llm_config" / "templates"
+        template_dir = (
+            Path(__file__).parent.parent
+            / "langchain_llm_config"
+            / "templates"
+        )
         template_dir.mkdir(parents=True, exist_ok=True)
         template_path = template_dir / "api.yaml"
         template_path.write_text("template: content")

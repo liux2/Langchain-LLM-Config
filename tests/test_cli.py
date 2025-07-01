@@ -132,7 +132,7 @@ class TestCLICommands:
             "pathlib.Path.cwd"
         ) as mock_cwd, patch(
             "builtins.open", mock_open()
-        ) as mock_file:
+        ):
 
             mock_get_path.return_value = config_path
             mock_load.return_value = test_config["llm"]
@@ -216,7 +216,7 @@ class TestCLICommands:
             "pathlib.Path.cwd"
         ) as mock_cwd, patch(
             "builtins.open", mock_open()
-        ) as mock_file:
+        ):
 
             mock_get_path.return_value = config_path
             mock_load.return_value = test_config["llm"]

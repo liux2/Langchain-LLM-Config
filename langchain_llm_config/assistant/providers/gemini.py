@@ -47,11 +47,11 @@ class GeminiAssistant(Assistant):
         self.llm: Any = ChatGoogleGenerativeAI(
             model=model_name,
             temperature=temperature,
-            max_output_tokens=max_tokens,  # type: ignore[call-arg]
+            max_output_tokens=max_tokens,
             top_p=top_p,
             google_api_key=SecretStr(
                 api_key or os.getenv("GEMINI_API_KEY", "dummy-key") or ""
-            ),  # type: ignore[call-arg]
+            ),
             timeout=float(connect_timeout) if connect_timeout else None,
             **model_kwargs,
         )

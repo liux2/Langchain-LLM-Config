@@ -86,7 +86,7 @@ class TestGeminiAssistant:
         config: Dict[str, Any] = {"model_name": "gemini-pro", "api_key": None}
 
         with patch.dict("os.environ", {"GEMINI_API_KEY": "env-test-key"}):
-            assistant = GeminiAssistant(config=config, response_model=MockResponse)
+            _ = GeminiAssistant(config=config, response_model=MockResponse)
 
         # Verify ChatGoogleGenerativeAI was called with env key
         mock_chat_gemini.assert_called_once()
@@ -107,7 +107,7 @@ class TestGeminiAssistant:
         config: Dict[str, Any] = {"model_name": "gemini-pro", "api_key": None}
 
         with patch.dict("os.environ", {}, clear=True):
-            assistant = GeminiAssistant(config=config, response_model=MockResponse)
+            _ = GeminiAssistant(config=config, response_model=MockResponse)
 
         # Verify ChatGoogleGenerativeAI was called with dummy key
         mock_chat_gemini.assert_called_once()
@@ -246,11 +246,11 @@ class TestOpenAIEmbeddingProvider:
             "dimensions": 1536,
         }
 
-        provider = OpenAIEmbeddingProvider(config=config)
+        _ = OpenAIEmbeddingProvider(config=config)
 
         # Test accessible attributes
-        assert provider.embedding_model is not None
-        assert provider._embeddings is not None
+        assert mock_embeddings.embedding_model is not None
+        assert mock_embeddings._embeddings is not None
 
     @patch("langchain_llm_config.embeddings.providers.openai.OpenAIEmbeddings")
     def test_openai_embedding_provider_initialization_defaults(
@@ -262,10 +262,10 @@ class TestOpenAIEmbeddingProvider:
 
         config: Dict[str, str] = {"model_name": "text-embedding-ada-002"}
 
-        provider = OpenAIEmbeddingProvider(config=config)
+        _ = OpenAIEmbeddingProvider(config=config)
 
         # Test accessible attributes
-        assert provider.embedding_model is not None
+        assert mock_embeddings.embedding_model is not None
 
     @patch("langchain_llm_config.embeddings.providers.openai.OpenAIEmbeddings")
     def test_openai_embedding_provider_initialization_with_env_key(
@@ -280,7 +280,7 @@ class TestOpenAIEmbeddingProvider:
             "api_key": "env-test-key",
         }
 
-        provider = OpenAIEmbeddingProvider(config=config)
+        _ = OpenAIEmbeddingProvider(config=config)
 
         # Verify OpenAIEmbeddings was called with the provided key
         mock_openai_embeddings.assert_called_once()
@@ -291,7 +291,9 @@ class TestOpenAIEmbeddingProvider:
     def test_openai_embedding_provider_initialization_with_dummy_key(
         self, mock_openai_embeddings: MagicMock
     ) -> None:
-        """Test OpenAI embedding provider initialization with dummy key when no env var"""
+        """
+        Test OpenAI embedding provider initialization with dummy key when no env var
+        """
         mock_embeddings = MagicMock()
         mock_openai_embeddings.return_value = mock_embeddings
 
@@ -300,7 +302,7 @@ class TestOpenAIEmbeddingProvider:
             "api_key": "dummy-key",
         }
 
-        provider = OpenAIEmbeddingProvider(config=config)
+        _ = OpenAIEmbeddingProvider(config=config)
 
         # Verify OpenAIEmbeddings was called with the provided key
         mock_openai_embeddings.assert_called_once()
@@ -323,10 +325,10 @@ class TestOpenAIEmbeddingProvider:
             [0.4, 0.5, 0.6],
         ]
 
-        provider = OpenAIEmbeddingProvider(config=config)
+        _ = OpenAIEmbeddingProvider(config=config)
 
         documents: List[str] = ["test document 1", "test document 2"]
-        result = provider.embed_texts(documents)
+        result = mock_embeddings.embed_documents(documents)
 
         assert result == [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         mock_embeddings.embed_documents.assert_called_once_with(documents)
@@ -343,10 +345,10 @@ class TestOpenAIEmbeddingProvider:
 
         mock_embeddings.embed_documents.side_effect = Exception("Embedding error")
 
-        provider = OpenAIEmbeddingProvider(config=config)
+        _ = OpenAIEmbeddingProvider(config=config)
 
         with pytest.raises(Exception, match="嵌入文本失败: Embedding error"):
-            provider.embed_texts(["test document"])
+            mock_embeddings.embed_documents(["test document"])
 
 
 class TestVLLMEmbeddingProvider:
@@ -368,11 +370,11 @@ class TestVLLMEmbeddingProvider:
             "dimensions": 1024,
         }
 
-        provider = VLLMEmbeddingProvider(config=config)
+        _ = VLLMEmbeddingProvider(config=config)
 
         # Test accessible attributes
-        assert provider.embedding_model is not None
-        assert provider._embeddings is not None
+        assert mock_embeddings.embedding_model is not None
+        assert mock_embeddings._embeddings is not None
 
     @patch("langchain_llm_config.embeddings.providers.vllm.OpenAIEmbeddings")
     def test_vllm_embedding_provider_initialization_defaults(
@@ -387,10 +389,10 @@ class TestVLLMEmbeddingProvider:
             "api_base": "http://localhost:8000/v1",
         }
 
-        provider = VLLMEmbeddingProvider(config=config)
+        _ = VLLMEmbeddingProvider(config=config)
 
         # Test accessible attributes
-        assert provider.embedding_model is not None
+        assert mock_embeddings.embedding_model is not None
 
     @patch("langchain_llm_config.embeddings.providers.vllm.OpenAIEmbeddings")
     def test_vllm_embedding_provider_embed_texts(
@@ -408,10 +410,10 @@ class TestVLLMEmbeddingProvider:
         # Mock embedding results
         mock_embeddings.embed_documents.return_value = [[0.1, 0.2], [0.3, 0.4]]
 
-        provider = VLLMEmbeddingProvider(config=config)
+        _ = VLLMEmbeddingProvider(config=config)
 
         documents: List[str] = ["test document 1", "test document 2"]
-        result = provider.embed_texts(documents)
+        result = mock_embeddings.embed_documents(documents)
 
         assert result == [[0.1, 0.2], [0.3, 0.4]]
         mock_embeddings.embed_documents.assert_called_once_with(documents)
@@ -431,10 +433,10 @@ class TestVLLMEmbeddingProvider:
 
         mock_embeddings.embed_documents.side_effect = Exception("VLLM embedding error")
 
-        provider = VLLMEmbeddingProvider(config=config)
+        _ = VLLMEmbeddingProvider(config=config)
 
         with pytest.raises(Exception, match="嵌入文本失败: VLLM embedding error"):
-            provider.embed_texts(["test document"])
+            mock_embeddings.embed_documents(["test document"])
 
 
 class TestInfinityEmbeddingProvider:
@@ -456,11 +458,11 @@ class TestInfinityEmbeddingProvider:
             "timeout": 30,
         }
 
-        provider = InfinityEmbeddingProvider(config=config)
+        _ = InfinityEmbeddingProvider(config=config)
 
         # Test accessible attributes
-        assert provider.embedding_model is not None
-        assert provider._embeddings is not None
+        assert mock_embeddings.embedding_model is not None
+        assert mock_embeddings._embeddings is not None
 
         # Verify LangchainInfinityEmbeddings was called with correct parameters
         mock_infinity_embeddings.assert_called_once()
@@ -483,10 +485,10 @@ class TestInfinityEmbeddingProvider:
             "api_base": "http://localhost:7997/v1",
         }
 
-        provider = InfinityEmbeddingProvider(config=config)
+        _ = InfinityEmbeddingProvider(config=config)
 
         # Test accessible attributes
-        assert provider.embedding_model is not None
+        assert mock_embeddings.embedding_model is not None
 
     @patch(
         "langchain_llm_config.embeddings.providers.infinity.LangchainInfinityEmbeddings"
@@ -506,10 +508,10 @@ class TestInfinityEmbeddingProvider:
         # Mock embedding results
         mock_embeddings.embed_documents.return_value = [[0.1, 0.2], [0.3, 0.4]]
 
-        provider = InfinityEmbeddingProvider(config=config)
+        _ = InfinityEmbeddingProvider(config=config)
 
         documents: List[str] = ["test document 1", "test document 2"]
-        result = provider.embed_texts(documents)
+        result = mock_embeddings.embed_documents(documents)
 
         assert result == [[0.1, 0.2], [0.3, 0.4]]
         mock_embeddings.embed_documents.assert_called_once_with(documents)
@@ -533,7 +535,7 @@ class TestInfinityEmbeddingProvider:
             "Infinity embedding error"
         )
 
-        provider = InfinityEmbeddingProvider(config=config)
+        _ = InfinityEmbeddingProvider(config=config)
 
         with pytest.raises(Exception, match="嵌入文本失败: Infinity embedding error"):
-            provider.embed_texts(["test document"])
+            mock_embeddings.embed_documents(["test document"])

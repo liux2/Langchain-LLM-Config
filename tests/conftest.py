@@ -11,7 +11,7 @@ import pytest
 import yaml
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def test_config_file() -> Generator[str, None, None]:
     """
     Create a temporary test configuration file with mock API keys
@@ -87,7 +87,7 @@ def test_config_file() -> Generator[str, None, None]:
     Path(temp_path).unlink(missing_ok=True)
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def mock_env_vars() -> Generator[None, None, None]:
     """
     Mock environment variables for testing
@@ -103,7 +103,7 @@ def mock_env_vars() -> Generator[None, None, None]:
         yield
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True)  # type: ignore[misc]
 def suppress_warnings() -> Generator[None, None, None]:
     """
     Suppress warnings during tests to keep output clean

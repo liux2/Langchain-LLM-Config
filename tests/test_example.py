@@ -133,7 +133,7 @@ class TestExample:
         assert "💡 Make sure your API keys are set" in output
 
     @patch("langchain_llm_config.example.create_assistant")
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_example_chat_assistant_async_success(
         self, mock_create_assistant: MagicMock
     ) -> None:
@@ -165,7 +165,7 @@ class TestExample:
         assert "suggestions" in output.lower() or "💡" in output
 
     @patch("langchain_llm_config.example.create_assistant")
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_example_chat_assistant_async_error(
         self, mock_create_assistant: MagicMock
     ) -> None:
@@ -233,7 +233,7 @@ class TestExample:
     @patch("langchain_llm_config.example.create_embedding_provider")
     @patch("numpy.dot")
     @patch("numpy.linalg.norm")
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_example_embedding_provider_async_success(
         self, mock_norm: MagicMock, mock_dot: MagicMock, mock_create_provider: MagicMock
     ) -> None:
@@ -265,7 +265,7 @@ class TestExample:
         assert "🔍 Similarity between texts 1 and 2: 0.700" in output
 
     @patch("langchain_llm_config.example.create_embedding_provider")
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_example_embedding_provider_async_error(
         self, mock_create_provider: MagicMock
     ) -> None:
@@ -325,7 +325,7 @@ class TestExample:
     @patch("langchain_llm_config.example.setup_environment")
     @patch("langchain_llm_config.example.example_chat_assistant_async")
     @patch("langchain_llm_config.example.example_embedding_provider_async")
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_main_async_success(
         self, mock_embedding: MagicMock, mock_chat: MagicMock, mock_setup: MagicMock
     ) -> None:
@@ -347,7 +347,7 @@ class TestExample:
         mock_embedding.assert_called_once()
 
     @patch("langchain_llm_config.example.setup_environment")
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_main_async_setup_failed(self, mock_setup: MagicMock) -> None:
         """Test main_async function when setup fails"""
         mock_setup.return_value = False
@@ -367,7 +367,10 @@ class TestExample:
     def test_example_embedding_provider_sync_insufficient_embeddings(
         self, tmp_path: Path
     ) -> None:
-        """Test example_embedding_provider_sync with insufficient embeddings for similarity calculation"""
+        """
+        Test example_embedding_provider_sync with insufficient embeddings
+        for similarity calculation
+        """
         with patch(
             "langchain_llm_config.example.create_embedding_provider"
         ) as mock_create_provider:
@@ -388,11 +391,14 @@ class TestExample:
             # Should not have similarity calculation
             assert "🔍 Similarity between texts 1 and 2:" not in output
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_example_embedding_provider_async_insufficient_embeddings(
         self, tmp_path: Path
     ) -> None:
-        """Test example_embedding_provider_async with insufficient embeddings for similarity calculation"""
+        """
+        Test example_embedding_provider_async with insufficient embeddings
+        for similarity calculation
+        """
         with patch(
             "langchain_llm_config.example.create_embedding_provider"
         ) as mock_create_provider:

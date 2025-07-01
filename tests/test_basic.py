@@ -72,7 +72,10 @@ class TestConfig:
     def test_load_config_non_strict_mode_missing_env_var(
         self, test_config_file: str
     ) -> None:
-        """Test that non-strict mode uses default values for missing environment variables"""
+        """
+        Test that non-strict mode uses default values
+        for missing environment variables
+        """
         # Create a config with environment variable references
         import yaml
 
@@ -125,7 +128,7 @@ class TestConfig:
 class TestFactory:
     """Test factory functions"""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_create_assistant_mock(self) -> None:
         """Test assistant creation with mocked dependencies"""
         from pydantic import BaseModel, Field
@@ -159,7 +162,7 @@ class TestFactory:
 
                 assert assistant is not None
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio  # type: ignore[misc]
     async def test_create_embedding_provider_mock(self) -> None:
         """Test embedding provider creation with mocked dependencies"""
         # Mock the embedding provider class

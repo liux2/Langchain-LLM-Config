@@ -26,8 +26,10 @@ class VLLMEmbeddingProvider(BaseEmbeddingProvider):
             **kwargs: 额外参数
         """
         # Calculate tiktoken cache directory
-        tiktoken_cache_dir = str(Path(__file__).parent.parent.parent / ".tiktoken_cache")
-        
+        tiktoken_cache_dir = str(
+            Path(__file__).parent.parent.parent / ".tiktoken_cache"
+        )
+
         # Set tiktoken cache directory environment variable
         os.environ["TIKTOKEN_CACHE_DIR"] = tiktoken_cache_dir
 

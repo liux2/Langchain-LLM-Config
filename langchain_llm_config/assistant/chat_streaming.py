@@ -159,7 +159,7 @@ class ChatStreaming:
 
             # Yield final result
             processing_time = time.time() - start_time
-            yield {  # type: ignore[unreachable]
+            yield {
                 "type": "final",
                 "content": full_response,
                 "processing_time": processing_time,
