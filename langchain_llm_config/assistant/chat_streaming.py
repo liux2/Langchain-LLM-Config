@@ -35,7 +35,7 @@ class ChatStreaming:
         self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            max_tokens=max_tokens,  # type: ignore[call-arg]
+            max_tokens=max_tokens,
             base_url=base_url,
             top_p=top_p,
             api_key=SecretStr(
@@ -159,7 +159,7 @@ class ChatStreaming:
 
             # Yield final result
             processing_time = time.time() - start_time
-            yield {  # type: ignore[unreachable]
+            yield {
                 "type": "final",
                 "content": full_response,
                 "processing_time": processing_time,
