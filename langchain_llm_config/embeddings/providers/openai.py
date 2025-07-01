@@ -1,8 +1,9 @@
-from typing import Dict, List
 import asyncio
 import time
-from langchain_openai import OpenAIEmbeddings
+from typing import Any, Dict, List
+
 from langchain_core.embeddings import Embeddings
+from langchain_openai import OpenAIEmbeddings
 
 from ..base import BaseEmbeddingProvider
 
@@ -10,7 +11,7 @@ from ..base import BaseEmbeddingProvider
 class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
     """OpenAI嵌入提供者"""
 
-    def __init__(self, config: Dict, **kwargs):
+    def __init__(self, config: Dict[str, Any], **kwargs: Any) -> None:
         """
         初始化OpenAI嵌入提供者
 

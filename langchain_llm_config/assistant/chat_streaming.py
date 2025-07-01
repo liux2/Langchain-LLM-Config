@@ -2,12 +2,13 @@
 Chat Streaming Assistant for real-time streaming responses
 """
 
-import time
-from typing import Optional, Dict, Any, AsyncGenerator
 import os
+import time
+from typing import Any, AsyncGenerator, Dict, Optional, Union
 
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
+from pydantic import SecretStr
 
 
 class ChatStreaming:
@@ -24,8 +25,8 @@ class ChatStreaming:
         top_p: float = 1.0,
         connect_timeout: Optional[int] = None,
         read_timeout: Optional[int] = None,
-        model_kwargs: Optional[Dict] = None,
-    ):
+        model_kwargs: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """Initialize the Chat Streaming Assistant"""
         self.model_name = model_name
         self.system_prompt = system_prompt or ""
@@ -34,19 +35,19 @@ class ChatStreaming:
         self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            max_tokens=max_tokens,
+            max_output_tokens=max_tokens,
             base_url=base_url,
             top_p=top_p,
-            api_key=api_key or os.getenv("OPENAI_API_KEY", "dummy-key"),
+            api_key=SecretStr(api_key or os.getenv("OPENAI_API_KEY", "dummy-key")),
             model_kwargs=model_kwargs or {},
             timeout=(connect_timeout, read_timeout),
         )
 
         self._setup_prompt()
 
-    def _setup_prompt(self):
+    def _setup_prompt(self) -> None:
         """Set up prompt template for chat"""
-        template = "{system_prompt}\n\n" "{context}\n" "用户: {question}\n" "助手:"
+        template = "{system_prompt}\n\n{context}\n用户: {question}\n助手:"
 
         self.prompt = PromptTemplate(
             template=template,
@@ -58,7 +59,7 @@ class ChatStreaming:
         query: str,
         extra_system_prompt: Optional[str] = None,
         context: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """Process user query and return complete response"""
         start_time = time.time()
@@ -101,7 +102,7 @@ class ChatStreaming:
         query: str,
         extra_system_prompt: Optional[str] = None,
         context: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat response in real-time

@@ -156,3 +156,9 @@ testpaths = ["tests"]
 
 [tool.uv.sources]
 langchain-llm-config = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest-mock>=3.14.1",
+    "types-pyyaml>=6.0.12.20250516",
+]

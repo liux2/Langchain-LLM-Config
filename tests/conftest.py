@@ -2,11 +2,12 @@
 Pytest configuration and fixtures for langchain-llm-config tests
 """
 
-import pytest
 import tempfile
-import yaml
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
+import yaml
 
 
 @pytest.fixture
@@ -102,6 +103,7 @@ def suppress_warnings():
     Suppress warnings during tests to keep output clean
     """
     import warnings
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        yield 
+        yield

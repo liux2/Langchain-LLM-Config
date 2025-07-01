@@ -1,14 +1,15 @@
-from typing import Type, Optional, Dict, Any
+from typing import Any, Dict, Optional, Type
+
 from pydantic import BaseModel
 
-from .config import load_config
-from .assistant.providers.vllm import VLLMAssistant
-from .assistant.providers.gemini import GeminiAssistant
 from .assistant.base import Assistant
 from .assistant.chat_streaming import ChatStreaming
+from .assistant.providers.gemini import GeminiAssistant
+from .assistant.providers.vllm import VLLMAssistant
+from .config import load_config
 from .embeddings.base import BaseEmbeddingProvider
-from .embeddings.providers.openai import OpenAIEmbeddingProvider
 from .embeddings.providers.infinity import InfinityEmbeddingProvider
+from .embeddings.providers.openai import OpenAIEmbeddingProvider
 from .embeddings.providers.vllm import VLLMEmbeddingProvider
 
 # 助手提供者映射
@@ -31,7 +32,7 @@ def create_assistant(
     provider: Optional[str] = None,
     system_prompt: Optional[str] = None,
     config_path: Optional[str] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Any:
     """
     创建助手实例
@@ -97,7 +98,7 @@ def create_chat_streaming(
     provider: Optional[str] = None,
     system_prompt: Optional[str] = None,
     config_path: Optional[str] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> ChatStreaming:
     """
     创建纯流式聊天助手实例（无响应模型约束）
@@ -134,7 +135,7 @@ def create_chat_streaming(
 
 
 def create_embedding_provider(
-    provider: Optional[str] = None, config_path: Optional[str] = None, **kwargs
+    provider: Optional[str] = None, config_path: Optional[str] = None, **kwargs: Any
 ) -> BaseEmbeddingProvider:
     """
     创建嵌入提供者实例

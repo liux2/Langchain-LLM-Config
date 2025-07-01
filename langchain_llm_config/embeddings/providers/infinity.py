@@ -1,6 +1,7 @@
-from typing import Dict, List
 import asyncio
 import time
+from typing import Dict, List
+
 from langchain_community.embeddings import (
     InfinityEmbeddings as LangchainInfinityEmbeddings,
 )

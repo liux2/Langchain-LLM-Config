@@ -1,8 +1,9 @@
-from typing import Dict, Optional
-import yaml
-from pathlib import Path
 import os
 import warnings
+from pathlib import Path
+from typing import Any, Dict, Optional, Union
+
+import yaml
 from dotenv import load_dotenv
 
 
@@ -27,13 +28,13 @@ def get_default_config_path() -> Path:
     return cwd_config
 
 
-def load_config(config_path: Optional[str] = None, strict: bool = False) -> Dict:
+def load_config(config_path: Optional[Union[str, Path]] = None, strict: bool = False) -> Dict[str, Any]:
     """
     Load LLM configuration
 
     Args:
         config_path: Configuration file path, defaults to api.yaml in current directory
-        strict: If True, raise ValueError for missing environment variables. 
+        strict: If True, raise ValueError for missing environment variables.
                 If False, use default values and show warnings.
 
     Returns:
@@ -49,8 +50,10 @@ def load_config(config_path: Optional[str] = None, strict: bool = False) -> Dict
 
     if config_path is None:
         config_path = get_default_config_path()
+    else:
+        config_path = Path(config_path)
 
-    if not Path(config_path).exists():
+    if not config_path.exists():
         raise ValueError(f"Configuration file not found: {config_path}")
 
     with open(config_path, "r", encoding="utf-8") as f:
@@ -87,7 +90,7 @@ def load_config(config_path: Optional[str] = None, strict: bool = False) -> Dict
                                 f"Environment variable {env_var} not set. Using default value. "
                                 f"Set {env_var} in your environment or .env file for production use.",
                                 UserWarning,
-                                stacklevel=2
+                                stacklevel=2,
                             )
                     else:
                         service_config[key] = env_value
@@ -95,7 +98,7 @@ def load_config(config_path: Optional[str] = None, strict: bool = False) -> Dict
     return llm_config
 
 
-def init_config(config_path: Optional[str] = None) -> Path:
+def init_config(config_path: Optional[Union[str, Path]] = None) -> Path:
     """
     Initialize a new configuration file with default settings.
 
@@ -107,8 +110,8 @@ def init_config(config_path: Optional[str] = None) -> Path:
     """
     if config_path is None:
         config_path = get_default_config_path()
-
-    config_path = Path(config_path)
+    else:
+        config_path = Path(config_path)
 
     # Create parent directory if it doesn't exist
     config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -123,7 +126,7 @@ def init_config(config_path: Optional[str] = None) -> Path:
         shutil.copy2(template_path, config_path)
     else:
         # Create a basic configuration if template doesn't exist
-        default_config = {
+        default_config: Dict[str, Any] = {
             "llm": {
                 "openai": {
                     "chat": {

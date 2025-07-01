@@ -1,11 +1,11 @@
-from typing import Type, Optional, Dict, Any
-from pydantic import BaseModel
 import os
+from typing import Any, Dict, Optional, Type, Union
 
-from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, SecretStr
 
 
 class Assistant:
@@ -33,8 +33,8 @@ class Assistant:
         top_p: float = 1.0,
         connect_timeout: Optional[int] = None,
         read_timeout: Optional[int] = None,
-        model_kwargs: Optional[Dict] = None,
-    ):
+        model_kwargs: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """
         初始化AI助手
 
@@ -58,10 +58,10 @@ class Assistant:
         self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            max_tokens=max_tokens,
+            max_output_tokens=max_tokens,
             base_url=base_url,
             top_p=top_p,
-            api_key=api_key or os.getenv("OPENAI_API_KEY", "dummy-key"),
+            api_key=SecretStr(api_key or os.getenv("OPENAI_API_KEY", "dummy-key")),
             model_kwargs=model_kwargs or {},
             timeout=(connect_timeout, read_timeout),
         )
@@ -69,7 +69,7 @@ class Assistant:
         # 设置解析器
         self._setup_prompt_and_chain()
 
-    def _setup_prompt_and_chain(self):
+    def _setup_prompt_and_chain(self) -> None:
         """设置提示模板和处理链"""
         # 创建基础解析器
         base_parser = PydanticOutputParser(pydantic_object=self.response_model)
@@ -107,14 +107,14 @@ class Assistant:
         )
 
         # 构建链
-        self.chain = RunnablePassthrough() | self.prompt | self.llm | self.parser
+        self.chain: RunnablePassthrough = RunnablePassthrough() | self.prompt | self.llm | self.parser
 
     def ask(
         self,
         query: str,
         extra_system_prompt: Optional[str] = None,
         context: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         处理用户查询并返回结构化响应（同步版本）
@@ -163,7 +163,7 @@ class Assistant:
         query: str,
         extra_system_prompt: Optional[str] = None,
         context: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         处理用户查询并返回结构化响应（异步版本）

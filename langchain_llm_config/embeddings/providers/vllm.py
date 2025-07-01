@@ -1,18 +1,19 @@
-from typing import Dict, List
 import asyncio
-import time
 import os
-from langchain_openai import OpenAIEmbeddings
-from langchain_core.embeddings import Embeddings
+import time
+from typing import Any, Dict, List
 
-from ..base import BaseEmbeddingProvider
+from langchain_core.embeddings import Embeddings
+from langchain_openai import OpenAIEmbeddings
+
 from ... import TIKTOKEN_CACHE_DIR
+from ..base import BaseEmbeddingProvider
 
 
 class VLLMEmbeddingProvider(BaseEmbeddingProvider):
     """VLLM嵌入提供者（使用OpenAI兼容接口）"""
 
-    def __init__(self, config: Dict, **kwargs):
+    def __init__(self, config: Dict[str, Any], **kwargs: Any) -> None:
         """
         初始化VLLM嵌入提供者
 
@@ -30,7 +31,9 @@ class VLLMEmbeddingProvider(BaseEmbeddingProvider):
         embedding_params = {
             "model": config["model_name"],
             "api_key": config.get("api_key"),
-            "base_url": config.get("api_base", "http://localhost:8000/v1"),  # Make api_base optional
+            "base_url": config.get(
+                "api_base", "http://localhost:8000/v1"
+            ),  # Make api_base optional
             "timeout": config.get("timeout", 30),
             "tiktoken_enabled": True,
         }

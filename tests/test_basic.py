@@ -2,29 +2,31 @@
 Basic tests for langchain-llm-config package
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from typing import Any
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from langchain_llm_config import (
     create_assistant,
     create_embedding_provider,
-    load_config,
-    init_config,
     get_default_config_path,
+    init_config,
+    load_config,
 )
 
 
 class TestConfig:
     """Test configuration functions"""
 
-    def test_get_default_config_path(self):
+    def test_get_default_config_path(self) -> None:
         """Test default config path resolution"""
         path = get_default_config_path()
         assert isinstance(path, Path)
         assert path.name == "api.yaml"
 
-    def test_init_config(self, tmp_path):
+    def test_init_config(self, tmp_path: Path) -> None:
         """Test configuration initialization"""
         config_path = tmp_path / "test_api.yaml"
         result_path = init_config(str(config_path))
@@ -39,10 +41,11 @@ class TestConfig:
         assert "openai" in config
         assert "vllm" in config
 
-    def test_load_config_strict_mode_missing_env_var(self, test_config_file):
+    def test_load_config_strict_mode_missing_env_var(self, test_config_file: str) -> None:
         """Test that strict mode raises error for missing environment variables"""
         # Create a config with environment variable references
         import yaml
+
         strict_config = {
             "llm": {
                 "gemini": {
@@ -54,18 +57,21 @@ class TestConfig:
                 "default": {"chat_provider": "gemini"},
             }
         }
-        
+
         with open(test_config_file, "w") as f:
             yaml.dump(strict_config, f)
-        
+
         # Should raise ValueError in strict mode
-        with pytest.raises(ValueError, match="Environment variable GEMINI_API_KEY not set"):
+        with pytest.raises(
+            ValueError, match="Environment variable GEMINI_API_KEY not set"
+        ):
             load_config(test_config_file, strict=True)
 
-    def test_load_config_non_strict_mode_missing_env_var(self, test_config_file):
+    def test_load_config_non_strict_mode_missing_env_var(self, test_config_file: str) -> None:
         """Test that non-strict mode uses default values for missing environment variables"""
         # Create a config with environment variable references
         import yaml
+
         config_with_env_vars = {
             "llm": {
                 "gemini": {
@@ -77,18 +83,19 @@ class TestConfig:
                 "default": {"chat_provider": "gemini"},
             }
         }
-        
+
         with open(test_config_file, "w") as f:
             yaml.dump(config_with_env_vars, f)
-        
+
         # Should not raise error and use default value
         config = load_config(test_config_file, strict=False)
         assert config["gemini"]["chat"]["api_key"] == "demo-key-not-for-production"
 
-    def test_load_config_with_env_vars(self, test_config_file, mock_env_vars):
+    def test_load_config_with_env_vars(self, test_config_file: str, mock_env_vars: Any) -> None:
         """Test loading config with environment variables set"""
         # Create a config with environment variable references
         import yaml
+
         config_with_env_vars = {
             "llm": {
                 "openai": {
@@ -100,10 +107,10 @@ class TestConfig:
                 "default": {"chat_provider": "openai"},
             }
         }
-        
+
         with open(test_config_file, "w") as f:
             yaml.dump(config_with_env_vars, f)
-        
+
         # Should use the environment variable value
         config = load_config(test_config_file, strict=True)
         assert config["openai"]["chat"]["api_key"] == "sk-test-key-not-for-production"
@@ -113,7 +120,7 @@ class TestFactory:
     """Test factory functions"""
 
     @pytest.mark.asyncio
-    async def test_create_assistant_mock(self):
+    async def test_create_assistant_mock(self) -> None:
         """Test assistant creation with mocked dependencies"""
         from pydantic import BaseModel, Field
 
@@ -147,7 +154,7 @@ class TestFactory:
                 assert assistant is not None
 
     @pytest.mark.asyncio
-    async def test_create_embedding_provider_mock(self):
+    async def test_create_embedding_provider_mock(self) -> None:
         """Test embedding provider creation with mocked dependencies"""
         # Mock the embedding provider class
         mock_provider = MagicMock()
@@ -176,15 +183,15 @@ class TestFactory:
 class TestImports:
     """Test that all imports work correctly"""
 
-    def test_main_imports(self):
+    def test_main_imports(self) -> None:
         """Test that main package imports work"""
         from langchain_llm_config import (
             create_assistant,
             create_chat_streaming,
             create_embedding_provider,
-            load_config,
-            init_config,
             get_default_config_path,
+            init_config,
+            load_config,
         )
 
         # Just verify imports work
@@ -199,14 +206,14 @@ class TestImports:
             ]
         )
 
-    def test_provider_imports(self):
+    def test_provider_imports(self) -> None:
         """Test that provider imports work"""
         from langchain_llm_config import (
-            VLLMAssistant,
             GeminiAssistant,
-            OpenAIEmbeddingProvider,
-            VLLMEmbeddingProvider,
             InfinityEmbeddingProvider,
+            OpenAIEmbeddingProvider,
+            VLLMAssistant,
+            VLLMEmbeddingProvider,
         )
 
         # Just verify imports work

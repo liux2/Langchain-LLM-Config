@@ -15,31 +15,31 @@ __email__ = "xingbangliu48@gmail.com"
 # Define the tiktoken cache directory path
 TIKTOKEN_CACHE_DIR = str(Path(__file__).parent / ".tiktoken_cache")
 
+# Import base classes for extensibility
+from .assistant.base import Assistant
+from .assistant.chat_streaming import ChatStreaming
+from .assistant.providers.gemini import GeminiAssistant
+
+# Import provider classes
+from .assistant.providers.vllm import VLLMAssistant
+
+# Import configuration functions
+from .config import (
+    get_default_config_path,
+    init_config,
+    load_config,
+)
+from .embeddings.base import BaseEmbeddingProvider
+from .embeddings.providers.infinity import InfinityEmbeddingProvider
+from .embeddings.providers.openai import OpenAIEmbeddingProvider
+from .embeddings.providers.vllm import VLLMEmbeddingProvider
+
 # Import main factory functions
 from .factory import (
     create_assistant,
     create_chat_streaming,
     create_embedding_provider,
 )
-
-# Import configuration functions
-from .config import (
-    load_config,
-    init_config,
-    get_default_config_path,
-)
-
-# Import base classes for extensibility
-from .assistant.base import Assistant
-from .assistant.chat_streaming import ChatStreaming
-from .embeddings.base import BaseEmbeddingProvider
-
-# Import provider classes
-from .assistant.providers.vllm import VLLMAssistant
-from .assistant.providers.gemini import GeminiAssistant
-from .embeddings.providers.openai import OpenAIEmbeddingProvider
-from .embeddings.providers.vllm import VLLMEmbeddingProvider
-from .embeddings.providers.infinity import InfinityEmbeddingProvider
 
 __all__ = [
     # Constants

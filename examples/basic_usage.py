@@ -4,6 +4,7 @@ Basic usage example for langchain-llm-config package
 
 import asyncio
 from typing import List
+
 from pydantic import BaseModel, Field
 
 from langchain_llm_config import create_assistant, create_embedding_provider
@@ -21,7 +22,7 @@ class ArticleAnalysis(BaseModel):
     word_count: int = Field(..., description="Approximate word count")
 
 
-async def assistant_example():
+async def assistant_example() -> None:
     """Example of using the assistant"""
     print("🤖 Creating assistant...")
 
@@ -55,7 +56,7 @@ async def assistant_example():
     print(f"Word Count: {result.word_count}")
 
 
-async def embedding_example():
+async def embedding_example() -> None:
     """Example of using embeddings"""
     print("\n🔗 Creating embedding provider...")
 
@@ -71,7 +72,7 @@ async def embedding_example():
     ]
 
     print("📝 Generating embeddings...")
-    embeddings = await embedding_provider.embed_texts(texts)
+    embeddings = await embedding_provider.embed_texts_async(texts)
 
     print(f"\n📊 Embedding Results:")
     print(f"Generated {len(embeddings)} embeddings")
@@ -87,7 +88,7 @@ async def embedding_example():
     print(f"Similarity between texts 1 and 2: {similarity:.3f}")
 
 
-async def streaming_example():
+async def streaming_example() -> None:
     """Example of streaming chat"""
     print("\n🌊 Creating streaming chat...")
 
@@ -103,7 +104,7 @@ async def streaming_example():
     print("Response: ", end="", flush=True)
 
     # Stream the response
-    async for chunk in streaming_chat.stream(
+    async for chunk in streaming_chat.stream_async(
         "Explain quantum computing in simple terms"
     ):
         print(chunk, end="", flush=True)
@@ -111,7 +112,7 @@ async def streaming_example():
     print("\n")
 
 
-async def main():
+async def main() -> None:
     """Main example function"""
     print("🚀 Langchain LLM Config - Basic Usage Examples")
     print("=" * 50)

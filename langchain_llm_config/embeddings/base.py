@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List
-from pydantic import BaseModel, Field
+
 from langchain_core.embeddings import Embeddings
+from pydantic import BaseModel, Field
 
 
 class EmbeddingResponse(BaseModel):

@@ -1,4 +1,5 @@
-from typing import Type, Dict, Optional, Any, List
+from typing import Any, Dict, List, Optional, Type
+
 from pydantic import BaseModel
 
 from ..base import Assistant
@@ -9,11 +10,11 @@ class VLLMAssistant(Assistant):
 
     def __init__(
         self,
-        config: Dict,
+        config: Dict[str, Any],
         response_model: Type[BaseModel],
         system_prompt: Optional[str] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """
         初始化VLLM助手
 

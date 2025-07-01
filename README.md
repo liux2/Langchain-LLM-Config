@@ -2,7 +2,7 @@
 
 Yet another redundant Langchain abstraction: comprehensive Python package for managing and using multiple LLM providers (OpenAI, VLLM, Gemini, Infinity) with a unified interface for both chat assistants and embeddings.
 
-[![PyPI version](https://badge.fury.io/py/langchain-llm-config.svg)](https://badge.fury.io/py/langchain-llm-config) [![Code Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg)](https://github.com/liux2/Langchain-LLM-Config)
+[![PyPI version](https://badge.fury.io/py/langchain-llm-config.svg)](https://badge.fury.io/py/langchain-llm-config) [![Python package](https://github.com/liux2/Langchain-LLM-Config/actions/workflows/python-package.yml/badge.svg?branch=main)](https://github.com/liux2/Langchain-LLM-Config/actions/workflows/python-package.yml)
 
 ## Features
 
