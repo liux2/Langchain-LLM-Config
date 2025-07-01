@@ -325,10 +325,10 @@ class TestOpenAIEmbeddingProvider:
             [0.4, 0.5, 0.6],
         ]
 
-        _ = OpenAIEmbeddingProvider(config=config)
+        provider = OpenAIEmbeddingProvider(config=config)
 
         documents: List[str] = ["test document 1", "test document 2"]
-        result = mock_embeddings.embed_documents(documents)
+        result = provider.embed_texts(documents)
 
         assert result == [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         mock_embeddings.embed_documents.assert_called_once_with(documents)
@@ -345,10 +345,10 @@ class TestOpenAIEmbeddingProvider:
 
         mock_embeddings.embed_documents.side_effect = Exception("Embedding error")
 
-        _ = OpenAIEmbeddingProvider(config=config)
+        provider = OpenAIEmbeddingProvider(config=config)
 
         with pytest.raises(Exception, match="嵌入文本失败: Embedding error"):
-            mock_embeddings.embed_documents(["test document"])
+            provider.embed_texts(["test document"])
 
 
 class TestVLLMEmbeddingProvider:
@@ -410,10 +410,10 @@ class TestVLLMEmbeddingProvider:
         # Mock embedding results
         mock_embeddings.embed_documents.return_value = [[0.1, 0.2], [0.3, 0.4]]
 
-        _ = VLLMEmbeddingProvider(config=config)
+        provider = VLLMEmbeddingProvider(config=config)
 
         documents: List[str] = ["test document 1", "test document 2"]
-        result = mock_embeddings.embed_documents(documents)
+        result = provider.embed_texts(documents)
 
         assert result == [[0.1, 0.2], [0.3, 0.4]]
         mock_embeddings.embed_documents.assert_called_once_with(documents)
@@ -433,10 +433,10 @@ class TestVLLMEmbeddingProvider:
 
         mock_embeddings.embed_documents.side_effect = Exception("VLLM embedding error")
 
-        _ = VLLMEmbeddingProvider(config=config)
+        provider = VLLMEmbeddingProvider(config=config)
 
-        with pytest.raises(Exception, match="嵌入文本失败: VLLM embedding error"):
-            mock_embeddings.embed_documents(["test document"])
+        with pytest.raises(Exception, match="VLLM嵌入文本失败: VLLM embedding error"):
+            provider.embed_texts(["test document"])
 
 
 class TestInfinityEmbeddingProvider:
@@ -508,10 +508,10 @@ class TestInfinityEmbeddingProvider:
         # Mock embedding results
         mock_embeddings.embed_documents.return_value = [[0.1, 0.2], [0.3, 0.4]]
 
-        _ = InfinityEmbeddingProvider(config=config)
+        provider = InfinityEmbeddingProvider(config=config)
 
         documents: List[str] = ["test document 1", "test document 2"]
-        result = mock_embeddings.embed_documents(documents)
+        result = provider.embed_texts(documents)
 
         assert result == [[0.1, 0.2], [0.3, 0.4]]
         mock_embeddings.embed_documents.assert_called_once_with(documents)
@@ -535,7 +535,7 @@ class TestInfinityEmbeddingProvider:
             "Infinity embedding error"
         )
 
-        _ = InfinityEmbeddingProvider(config=config)
+        provider = InfinityEmbeddingProvider(config=config)
 
         with pytest.raises(Exception, match="嵌入文本失败: Infinity embedding error"):
-            mock_embeddings.embed_documents(["test document"])
+            provider.embed_texts(["test document"])

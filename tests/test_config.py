@@ -168,28 +168,28 @@ class TestConfigFunctions:
 
     def test_init_config_with_template(self, tmp_path: Path) -> None:
         """Test init_config with existing template"""
-        # Create a template file in the expected location
-        template_dir = (
-            Path(__file__).parent.parent / "langchain_llm_config" / "templates"
-        )
-        template_dir.mkdir(parents=True, exist_ok=True)
-        template_path = template_dir / "api.yaml"
-        template_path.write_text("template: content")
+        # The template file should now exist in the package
+        import langchain_llm_config.config as config_module
 
-        try:
-            target_path = tmp_path / "new_api.yaml"
-            result = init_config(str(target_path))
+        config_file_path = Path(config_module.__file__)
+        template_path = config_file_path.parent / "templates" / "api.yaml"
 
-            assert result == target_path
-            assert target_path.exists()
-            # Should copy the template content
-            assert target_path.read_text() == "template: content"
-        finally:
-            # Clean up the template file
-            if template_path.exists():
-                template_path.unlink()
-            if template_dir.exists():
-                template_dir.rmdir()
+        # Verify the template exists
+        assert template_path.exists(), f"Template file not found at {template_path}"
+        template_content = template_path.read_text()
+
+        target_path = tmp_path / "new_api.yaml"
+        result = init_config(str(target_path))
+
+        assert result == target_path
+        assert target_path.exists()
+        # Should copy the template content exactly
+        assert target_path.read_text() == template_content
+        # Verify it's a valid YAML configuration
+        config = yaml.safe_load(target_path.read_text())
+        assert "llm" in config
+        assert "default" in config["llm"]
+        assert "openai" in config["llm"]
 
     def test_init_config_without_template(self, tmp_path: Path) -> None:
         """Test init_config without template file"""

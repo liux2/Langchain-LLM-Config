@@ -146,72 +146,25 @@ def init_config(config_path: Optional[Union[str, Path]] = None) -> Path:
 
         shutil.copy2(template_path, config_path)
     else:
-        # Create a basic configuration if template doesn't exist
-        default_config: Dict[str, Any] = {
+        # If template doesn't exist, create a minimal configuration
+        # This should rarely happen since we include the template in the package
+        minimal_config: Dict[str, Any] = {
             "llm": {
+                "default": {"chat_provider": "openai", "embedding_provider": "openai"},
                 "openai": {
                     "chat": {
-                        "api_base": "https://api.openai.com/v1",
                         "api_key": "${OPENAI_API_KEY}",
                         "model_name": "gpt-3.5-turbo",
-                        "temperature": 0.7,
-                        "max_tokens": 8192,
-                        "connect_timeout": 30,
-                        "read_timeout": 60,
                     },
                     "embeddings": {
-                        "api_base": "https://api.openai.com/v1",
                         "api_key": "${OPENAI_API_KEY}",
                         "model_name": "text-embedding-ada-002",
-                        "timeout": 30,
                     },
                 },
-                "vllm": {
-                    "chat": {
-                        "api_base": "http://localhost:8000/v1",
-                        "api_key": "${OPENAI_API_KEY}",
-                        "model_name": "meta-llama/Llama-2-7b-chat-hf",
-                        "temperature": 0.6,
-                        "top_p": 0.8,
-                        "max_tokens": 8192,
-                        "connect_timeout": 30,
-                        "read_timeout": 60,
-                    },
-                    "embeddings": {
-                        "api_base": "http://localhost:8000/v1",
-                        "api_key": "${OPENAI_API_KEY}",
-                        "model_name": "bge-m3",
-                        "dimensions": 1024,
-                        "timeout": 30,
-                    },
-                },
-                "gemini": {
-                    "chat": {
-                        "api_key": "${GEMINI_API_KEY}",
-                        "model_name": "gemini-pro",
-                        "temperature": 0.7,
-                        "max_tokens": 8192,
-                        "top_p": 1.0,
-                        "connect_timeout": 30,
-                        "model_kwargs": {},
-                    },
-                    "embeddings": {
-                        "api_key": "${GEMINI_API_KEY}",
-                        "model_name": "embedding-001",
-                        "timeout": 30,
-                    },
-                },
-                "infinity": {
-                    "embeddings": {
-                        "api_base": "http://localhost:7997/v1",
-                        "model_name": "models/bge-m3",
-                    }
-                },
-                "default": {"chat_provider": "openai", "embedding_provider": "openai"},
             }
         }
 
         with open(config_path, "w", encoding="utf-8") as f:
-            yaml.dump(default_config, f, default_flow_style=False, allow_unicode=True)
+            yaml.dump(minimal_config, f, default_flow_style=False, allow_unicode=True)
 
     return config_path
