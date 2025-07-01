@@ -51,7 +51,7 @@ class GeminiAssistant(Assistant):
             top_p=top_p,
             google_api_key=SecretStr(
                 api_key or os.getenv("GEMINI_API_KEY", "dummy-key") or ""
-            ),   # type: ignore[call-arg]
+            ),  # type: ignore[call-arg]
             timeout=float(connect_timeout) if connect_timeout else None,
             **model_kwargs,
         )
