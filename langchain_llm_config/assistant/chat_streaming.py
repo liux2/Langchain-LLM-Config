@@ -2,16 +2,13 @@
 Chat Streaming Assistant for real-time streaming responses
 """
 
-import os
 import time
-from typing import Any, AsyncGenerator, Dict, Optional, Union
+from typing import Any, AsyncGenerator, Dict, Optional
 
-from langchain_core.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
-from pydantic import SecretStr
+from .base import Assistant
 
 
-class ChatStreaming:
+class ChatStreaming(Assistant):
     """Pure streaming chat assistant without response model constraints"""
 
     def __init__(
@@ -27,42 +24,25 @@ class ChatStreaming:
         read_timeout: Optional[int] = None,
         model_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Initialize the Chat Streaming Assistant"""
-        self.model_name = model_name
-        self.system_prompt = system_prompt or ""
-
-        # Ensure model_kwargs is a dictionary
-        if model_kwargs is None:
-            model_kwargs = {}
-
-        # Add model-specific parameters to model_kwargs
-        if max_tokens is not None:
-            model_kwargs["max_tokens"] = max_tokens
-        if top_p is not None:
-            model_kwargs["top_p"] = top_p
-
-        # Initialize LLM with only top-level accepted parameters
-        self.llm = ChatOpenAI(
-            model=model_name,
+        """Initialize the Chat Streaming Assistant using base chain"""
+        # Initialize parent with NO response model to avoid JSON formatting
+        super().__init__(
+            model_name=model_name,
+            response_model=None,  # No response model for pure streaming
             temperature=temperature,
+            max_tokens=max_tokens,
             base_url=base_url,
-            api_key=SecretStr(
-                api_key or os.getenv("OPENAI_API_KEY", "dummy-key") or ""
-            ),
+            api_key=api_key,
+            system_prompt=system_prompt,
+            top_p=top_p,
+            connect_timeout=connect_timeout,
+            read_timeout=read_timeout,
             model_kwargs=model_kwargs,
-            timeout=(connect_timeout, read_timeout),
+            auto_apply_parser=False,  # Use base chain only for streaming
         )
 
-        self._setup_prompt()
-
-    def _setup_prompt(self) -> None:
-        """Set up prompt template for chat"""
-        template = "{system_prompt}\n\n{context}\n用户: {question}\n助手:"
-
-        self.prompt = PromptTemplate(
-            template=template,
-            input_variables=["question", "system_prompt", "context"],
-        )
+        # Store model name for response metadata
+        self.model_name = model_name
 
     async def chat(
         self,
@@ -71,7 +51,7 @@ class ChatStreaming:
         context: Optional[str] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Process user query and return complete response"""
+        """Process user query and return complete response using base chain"""
         start_time = time.time()
 
         try:
@@ -87,13 +67,13 @@ class ChatStreaming:
             # Build context
             context_str = f"背景信息：{context}" if context else ""
 
-            # Get response from LLM
-            response = await self.llm.ainvoke(
-                self.prompt.format(
-                    question=query,
-                    system_prompt=system_prompt,
-                    context=context_str,
-                )
+            # Use base chain for non-parsed response
+            response = await self.base_chain.ainvoke(
+                {
+                    "question": query,
+                    "system_prompt": system_prompt,
+                    "context": context_str,
+                }
             )
 
             processing_time = time.time() - start_time
@@ -115,7 +95,7 @@ class ChatStreaming:
         **kwargs: Any,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Stream chat response in real-time
+        Stream chat response in real-time using base chain
 
         This method streams the LLM response token by token without any
         response model constraints or structured output requirements
@@ -138,13 +118,13 @@ class ChatStreaming:
             # Initialize streaming state
             full_response = ""
 
-            # Stream directly from LLM
-            async for chunk in self.llm.astream(
-                self.prompt.format(
-                    question=query,
-                    system_prompt=system_prompt,
-                    context=context_str,
-                )
+            # Stream using base chain
+            async for chunk in self.base_chain.astream(
+                {
+                    "question": query,
+                    "system_prompt": system_prompt,
+                    "context": context_str,
+                }
             ):
                 if hasattr(chunk, "content") and chunk.content:
                     content = chunk.content
