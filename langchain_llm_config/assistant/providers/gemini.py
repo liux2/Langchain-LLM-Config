@@ -69,3 +69,6 @@ class GeminiAssistant(Assistant):
 
         # 设置提示模板和处理链
         self._setup_prompt_and_chain()
+
+        # 默认应用解析器以保持向后兼容性
+        self.apply_parser()

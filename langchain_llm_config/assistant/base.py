@@ -34,6 +34,7 @@ class Assistant:
         connect_timeout: Optional[int] = None,
         read_timeout: Optional[int] = None,
         model_kwargs: Optional[Dict[str, Any]] = None,
+        auto_apply_parser: bool = True,
     ) -> None:
         """
         初始化AI助手
@@ -50,6 +51,7 @@ class Assistant:
             connect_timeout: 连接超时时间
             read_timeout: 读取超时时间
             model_kwargs: 额外的模型参数
+            auto_apply_parser: 是否自动应用解析器（默认True，保持向后兼容）
         """
         self.system_prompt = system_prompt
         self.response_model = response_model
@@ -78,6 +80,10 @@ class Assistant:
 
         # 设置解析器
         self._setup_prompt_and_chain()
+
+        # 根据参数决定是否自动应用解析器（向后兼容）
+        if auto_apply_parser:
+            self.apply_parser()
 
     def _setup_prompt_and_chain(self) -> None:
         """设置提示模板和处理链"""
@@ -117,12 +123,23 @@ class Assistant:
             partial_variables={"format_instructions": escaped_format_instructions},
         )
 
-        # 构建链
+        # 构建基础链（不包含解析器）
         from langchain_core.runnables import Runnable
 
-        self.chain: Runnable = (
-            RunnablePassthrough() | self.prompt | self.llm | self.parser
-        )
+        self.base_chain: Runnable = RunnablePassthrough() | self.prompt | self.llm
+
+        # 初始化时使用基础链
+        self.chain: Runnable = self.base_chain
+
+    def apply_parser(self) -> None:
+        """
+        应用解析器到链上，使输出结构化
+
+        调用此方法后，ask方法将返回解析后的结构化数据
+        """
+        from langchain_core.runnables import Runnable
+
+        self.chain: Runnable = self.base_chain | self.parser
 
     def ask(
         self,
@@ -159,8 +176,8 @@ class Assistant:
             # 构建上下文信息
             context_str = f"背景信息：{context}" if context else ""
 
-            # 获取原始输出
-            raw_output = self.chain.invoke(
+            # 获取输出
+            output = self.chain.invoke(
                 {
                     "question": query,
                     "system_prompt": system_prompt,
@@ -168,8 +185,17 @@ class Assistant:
                 }
             )
 
-            result: Dict[str, Any] = raw_output.model_dump()
-            return result
+            # 检查是否应用了解析器（通过检查输出类型）
+            if hasattr(output, "model_dump"):
+                # 解析器已应用，返回结构化数据
+                result: Dict[str, Any] = output.model_dump()
+                return result
+            else:
+                # 解析器未应用，返回原始LLM输出
+                if hasattr(output, "content"):
+                    return {"content": output.content}
+                else:
+                    return {"content": str(output)}
 
         except Exception as e:
             raise ValueError(f"处理查询时出错: {str(e)}") from e
@@ -209,8 +235,8 @@ class Assistant:
             # 构建上下文信息
             context_str = f"背景信息：{context}" if context else ""
 
-            # 获取原始输出
-            raw_output = await self.chain.ainvoke(
+            # 获取输出
+            output = await self.chain.ainvoke(
                 {
                     "question": query,
                     "system_prompt": system_prompt,
@@ -218,8 +244,17 @@ class Assistant:
                 }
             )
 
-            result: Dict[str, Any] = raw_output.model_dump()
-            return result
+            # 检查是否应用了解析器（通过检查输出类型）
+            if hasattr(output, "model_dump"):
+                # 解析器已应用，返回结构化数据
+                result: Dict[str, Any] = output.model_dump()
+                return result
+            else:
+                # 解析器未应用，返回原始LLM输出
+                if hasattr(output, "content"):
+                    return {"content": output.content}
+                else:
+                    return {"content": str(output)}
 
         except Exception as e:
             raise ValueError(f"处理查询时出错: {str(e)}") from e
