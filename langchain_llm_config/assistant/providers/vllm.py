@@ -11,8 +11,9 @@ class VLLMAssistant(Assistant):
     def __init__(
         self,
         config: Dict[str, Any],
-        response_model: Type[BaseModel],
+        response_model: Optional[Type[BaseModel]] = None,
         system_prompt: Optional[str] = None,
+        auto_apply_parser: bool = True,
         **kwargs: Any,
     ) -> None:
         """
@@ -20,8 +21,9 @@ class VLLMAssistant(Assistant):
 
         Args:
             config: 配置字典
-            response_model: 响应模型类
+            response_model: 响应模型类（当auto_apply_parser=False时可选）
             system_prompt: 系统提示
+            auto_apply_parser: 是否自动应用解析器（默认True，保持向后兼容）
             **kwargs: 额外参数
         """
         # 保存config作为实例变量，但不传递给父类
@@ -40,5 +42,6 @@ class VLLMAssistant(Assistant):
             read_timeout=config.get("read_timeout", 60),
             model_kwargs=config.get("model_kwargs", {}),
             system_prompt=system_prompt,
+            auto_apply_parser=auto_apply_parser,
             **kwargs,  # 传递其他参数
         )

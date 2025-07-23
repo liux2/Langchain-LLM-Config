@@ -38,25 +38,38 @@ _EMBEDDING_PROVIDERS: Dict[str, Type[EmbeddingProviderType]] = {
 
 
 def create_assistant(
-    response_model: Type[BaseModel],
+    response_model: Optional[Type[BaseModel]] = None,
     provider: Optional[str] = None,
     system_prompt: Optional[str] = None,
     config_path: Optional[str] = None,
+    auto_apply_parser: bool = True,
     **kwargs: Any,
 ) -> Any:
     """
     创建助手实例
 
     Args:
-        response_model: 响应模型类，由路由定义
+        response_model: 响应模型类（当auto_apply_parser=False时可选）
         provider: 提供者名称，默认使用配置中的默认值
         system_prompt: 系统提示
         config_path: 配置文件路径
+        auto_apply_parser: 是否自动应用解析器（默认True，保持向后兼容）
         **kwargs: 额外参数
 
     Returns:
         配置好的助手实例
+
+    Raises:
+        ValueError: 当auto_apply_parser=True但未提供response_model时
     """
+    # Validate parameters
+    if auto_apply_parser and response_model is None:
+        raise ValueError(
+            "response_model is required when auto_apply_parser=True. "
+            "Either provide a response_model or set auto_apply_parser=False "
+            "for raw text output."
+        )
+
     config = load_config(config_path)
 
     if provider is None:
@@ -84,6 +97,7 @@ def create_assistant(
             connect_timeout=provider_config.get("connect_timeout"),
             model_kwargs=provider_config.get("model_kwargs", {}),
             system_prompt=system_prompt,
+            auto_apply_parser=auto_apply_parser,
             **kwargs,
         )
     elif provider == "gemini":
@@ -92,6 +106,7 @@ def create_assistant(
             config=provider_config,
             response_model=response_model,
             system_prompt=system_prompt,
+            auto_apply_parser=auto_apply_parser,
             **kwargs,
         )
     else:
@@ -100,6 +115,7 @@ def create_assistant(
             config=provider_config,
             response_model=response_model,
             system_prompt=system_prompt,
+            auto_apply_parser=auto_apply_parser,
             **kwargs,
         )
 
@@ -127,6 +143,8 @@ def create_chat_streaming(
     if provider is None:
         provider = config["default"]["chat_provider"]
 
+    # Type assertion to help type checker
+    assert provider is not None
     provider_config = config[provider]["chat"]
 
     return ChatStreaming(

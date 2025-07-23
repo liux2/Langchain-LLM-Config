@@ -20,16 +20,19 @@ Yet another redundant Langchain abstraction: comprehensive Python package for ma
 ## Installation
 
 ### Using pip
+
 ```bash
 pip install langchain-llm-config
 ```
 
 ### Using uv (recommended)
+
 ```bash
 uv add langchain-llm-config
 ```
 
 ### Development installation
+
 ```bash
 git clone https://github.com/liux2/Langchain-LLM-Config.git
 cd langchain-llm-config
@@ -111,22 +114,35 @@ from langchain_llm_config import create_assistant, create_embedding_provider
 from pydantic import BaseModel, Field
 from typing import List
 
+
 # Define your response model
 class ArticleAnalysis(BaseModel):
     summary: str = Field(..., description="Article summary")
     keywords: List[str] = Field(..., description="Key topics")
     sentiment: str = Field(..., description="Overall sentiment")
 
-# Create an assistant
+
+# Create an assistant without response model (raw text mode)
 assistant = create_assistant(
-    response_model=ArticleAnalysis,
+    response_model=None,  # Explicitly set to None for raw text
     system_prompt="You are a helpful article analyzer.",
-    provider="openai"  # or "vllm", "gemini"
+    provider="openai",  # or "vllm", "gemini"
+    auto_apply_parser=False,
 )
 
-# Use the assistant (synchronous)
+# Use the assistant for raw text output
+print("=== Raw Text Mode ===")
 result = assistant.ask("Analyze this article: ...")
-print(result["summary"])
+print(result)
+
+# Apply parser to the same assistant (modifies in place)
+print("\n=== Applying Parser ===")
+assistant.apply_parser(response_model=ArticleAnalysis)
+
+# Now use the same assistant for structured output
+print("\n=== Structured Mode ===")
+result = assistant.ask("Analyze this article: ...")
+print(result)
 
 # Create an embedding provider
 embedding_provider = create_embedding_provider(provider="openai")
@@ -152,20 +168,36 @@ embeddings = await embedding_provider.embed_texts_async(texts)
 #### Streaming Chat
 
 ```python
+import asyncio
 from langchain_llm_config import create_chat_streaming
 
-# Create streaming chat assistant
-streaming_chat = create_chat_streaming(
-    provider="openai",
-    system_prompt="You are a helpful assistant."
-)
 
-# Stream responses in real-time
-async for chunk in streaming_chat.chat_stream("Tell me a story"):
-    if chunk["type"] == "stream":
-        print(chunk["content"], end="", flush=True)
-    elif chunk["type"] == "final":
-        print(f"\n\nProcessing time: {chunk['processing_time']:.2f}s")
+async def main():
+    """Main async function to run the streaming chat example"""
+    # Create streaming chat assistant
+    # Try with OpenAI first to test streaming
+    streaming_chat = create_chat_streaming(
+        provider="vllm", system_prompt="You are a helpful assistant."
+    )
+
+    print("🤖 Starting streaming chat...")
+    print("Response: ", end="", flush=True)
+
+    try:
+        # Stream responses in real-time
+        async for chunk in streaming_chat.chat_stream("Tell me a story"):
+            if chunk["type"] == "stream":
+                print(chunk["content"], end="", flush=True)
+            elif chunk["type"] == "final":
+                print(f"\n\nProcessing time: {chunk['processing_time']:.2f}s")
+                print(f"Model used: {chunk['model_used']}")
+    except Exception as e:
+        print(f"\n❌ Error occurred: {e}")
+
+
+if __name__ == "__main__":
+    # Run the async function
+    asyncio.run(main())
 ```
 
 ## Supported Providers

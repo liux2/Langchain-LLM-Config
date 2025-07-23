@@ -5,15 +5,7 @@ Chat Streaming Assistant for real-time streaming responses
 import time
 from typing import Any, AsyncGenerator, Dict, Optional
 
-from pydantic import BaseModel
-
 from .base import Assistant
-
-
-class DummyStreamingModel(BaseModel):
-    """Dummy model for streaming - not used for parsing"""
-
-    content: str
 
 
 class ChatStreaming(Assistant):
@@ -33,10 +25,10 @@ class ChatStreaming(Assistant):
         model_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Initialize the Chat Streaming Assistant using base chain"""
-        # Initialize parent with dummy model and no auto-parser
+        # Initialize parent with NO response model to avoid JSON formatting
         super().__init__(
             model_name=model_name,
-            response_model=DummyStreamingModel,
+            response_model=None,  # No response model for pure streaming
             temperature=temperature,
             max_tokens=max_tokens,
             base_url=base_url,
