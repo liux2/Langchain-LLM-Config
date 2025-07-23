@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type
 
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
@@ -137,9 +137,7 @@ class Assistant:
 
         调用此方法后，ask方法将返回解析后的结构化数据
         """
-        from langchain_core.runnables import Runnable
-
-        self.chain: Runnable = self.base_chain | self.parser
+        self.chain = self.base_chain | self.parser
 
     def ask(
         self,

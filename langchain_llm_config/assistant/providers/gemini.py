@@ -57,7 +57,7 @@ class GeminiAssistant(Assistant):
         self.llm: Any = ChatGoogleGenerativeAI(
             model=model_name,
             temperature=temperature,
-            google_api_key=SecretStr(
+            api_key=SecretStr(
                 api_key or os.getenv("GEMINI_API_KEY", "dummy-key") or ""
             ),
             timeout=float(connect_timeout) if connect_timeout else None,

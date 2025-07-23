@@ -254,7 +254,7 @@ class TestAssistantBase:
 class TestChatStreaming:
     """Test chat streaming functionality"""
 
-    @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
+    @patch("langchain_llm_config.assistant.base.ChatOpenAI")
     def test_chat_streaming_initialization(self, mock_chat_openai: MagicMock) -> None:
         """Test chat streaming initialization"""
         mock_llm = MagicMock()
@@ -278,7 +278,7 @@ class TestChatStreaming:
         assert streaming.llm is not None
         assert streaming.prompt is not None
 
-    @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
+    @patch("langchain_llm_config.assistant.base.ChatOpenAI")
     def test_chat_streaming_initialization_defaults(
         self, mock_chat_openai: MagicMock
     ) -> None:
@@ -289,10 +289,10 @@ class TestChatStreaming:
         streaming = ChatStreaming(model_name="test-model")
 
         assert streaming.model_name == "test-model"
-        assert streaming.system_prompt == ""
+        assert streaming.system_prompt is None
         assert streaming.llm is not None
 
-    @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
+    @patch("langchain_llm_config.assistant.base.ChatOpenAI")
     def test_setup_prompt(self, mock_chat_openai: MagicMock) -> None:
         """Test prompt setup for chat streaming"""
         mock_llm = MagicMock()
@@ -305,7 +305,7 @@ class TestChatStreaming:
         assert "system_prompt" in streaming.prompt.input_variables
         assert "context" in streaming.prompt.input_variables
 
-    @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
+    @patch("langchain_llm_config.assistant.base.ChatOpenAI")
     @patch("time.time")
     def test_chat_method_success(
         self, mock_time: MagicMock, mock_chat_openai: MagicMock
@@ -320,9 +320,12 @@ class TestChatStreaming:
         # Mock response
         mock_response = MagicMock()
         mock_response.content = "Test response content"
-        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
 
         streaming = ChatStreaming(model_name="test-model")
+
+        # Mock the base_chain.ainvoke method
+        streaming.base_chain = MagicMock()
+        streaming.base_chain.ainvoke = AsyncMock(return_value=mock_response)
 
         result = asyncio.run(streaming.chat("test question"))
 
@@ -330,7 +333,7 @@ class TestChatStreaming:
         assert result["processing_time"] == 1.5
         assert result["model_used"] == "test-model"
 
-    @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
+    @patch("langchain_llm_config.assistant.base.ChatOpenAI")
     @patch("time.time")
     def test_chat_method_with_extra_system_prompt(
         self, mock_time: MagicMock, mock_chat_openai: MagicMock
@@ -343,19 +346,22 @@ class TestChatStreaming:
 
         mock_response = MagicMock()
         mock_response.content = "Test response"
-        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
 
         streaming = ChatStreaming(model_name="test-model", system_prompt="Base prompt")
+
+        # Mock the base_chain.ainvoke method
+        streaming.base_chain = MagicMock()
+        streaming.base_chain.ainvoke = AsyncMock(return_value=mock_response)
 
         _ = asyncio.run(
             streaming.chat("test question", extra_system_prompt="Extra prompt")
         )
 
-        # Verify the LLM was called with combined system prompt
-        call_args = mock_llm.ainvoke.call_args[0][0]
-        assert "Base prompt\nExtra prompt" in str(call_args)
+        # Verify the base_chain was called with combined system prompt
+        call_args = streaming.base_chain.ainvoke.call_args[0][0]
+        assert call_args["system_prompt"] == "Base prompt\nExtra prompt"
 
-    @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
+    @patch("langchain_llm_config.assistant.base.ChatOpenAI")
     @patch("time.time")
     def test_chat_method_with_context(
         self, mock_time: MagicMock, mock_chat_openai: MagicMock
@@ -368,17 +374,20 @@ class TestChatStreaming:
 
         mock_response = MagicMock()
         mock_response.content = "Test response"
-        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
 
         streaming = ChatStreaming(model_name="test-model")
 
+        # Mock the base_chain.ainvoke method
+        streaming.base_chain = MagicMock()
+        streaming.base_chain.ainvoke = AsyncMock(return_value=mock_response)
+
         _ = asyncio.run(streaming.chat("test question", context="test context"))
 
-        # Verify the LLM was called with context
-        call_args = mock_llm.ainvoke.call_args[0][0]
-        assert "背景信息：test context" in str(call_args)
+        # Verify the base_chain was called with context
+        call_args = streaming.base_chain.ainvoke.call_args[0][0]
+        assert call_args["context"] == "背景信息：test context"
 
-    @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
+    @patch("langchain_llm_config.assistant.base.ChatOpenAI")
     @patch("time.time")
     def test_chat_method_exception_handling(
         self, mock_time: MagicMock, mock_chat_openai: MagicMock
@@ -388,14 +397,19 @@ class TestChatStreaming:
         mock_chat_openai.return_value = mock_llm
 
         mock_time.side_effect = [100.0, 101.0]
-        mock_llm.ainvoke = AsyncMock(side_effect=Exception("Chat test error"))
 
         streaming = ChatStreaming(model_name="test-model")
+
+        # Mock the base_chain.ainvoke method to raise an exception
+        streaming.base_chain = MagicMock()
+        streaming.base_chain.ainvoke = AsyncMock(
+            side_effect=Exception("Chat test error")
+        )
 
         with pytest.raises(ValueError, match="处理查询时出错: Chat test error"):
             asyncio.run(streaming.chat("test question"))
 
-    @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
+    @patch("langchain_llm_config.assistant.base.ChatOpenAI")
     @patch("time.time")
     def test_chat_stream_method_success(
         self, mock_time: MagicMock, mock_chat_openai: MagicMock
@@ -423,9 +437,11 @@ class TestChatStreaming:
             yield mock_chunk1
             yield mock_chunk2
 
-        mock_llm.astream = mock_stream
-
         streaming = ChatStreaming(model_name="test-model")
+
+        # Mock the base_chain.astream method
+        streaming.base_chain = MagicMock()
+        streaming.base_chain.astream = mock_stream
 
         # Collect streaming results
         results: List[Dict[str, Any]] = []
@@ -451,7 +467,7 @@ class TestChatStreaming:
         assert final_result["content"] == "Hello World"
         assert final_result["is_complete"]
 
-    @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
+    @patch("langchain_llm_config.assistant.base.ChatOpenAI")
     @patch("time.time")
     def test_chat_stream_method_with_extra_system_prompt(
         self, mock_time: MagicMock, mock_chat_openai: MagicMock
@@ -487,7 +503,7 @@ class TestChatStreaming:
         assert results[0]["type"] == "stream"
         assert results[-1]["type"] == "final"
 
-    @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
+    @patch("langchain_llm_config.assistant.base.ChatOpenAI")
     @patch("time.time")
     def test_chat_stream_method_exception_handling(
         self, mock_time: MagicMock, mock_chat_openai: MagicMock
@@ -496,17 +512,19 @@ class TestChatStreaming:
         mock_llm = MagicMock()
         mock_chat_openai.return_value = mock_llm
 
-        mock_time.side_effect = [100.0, 101.0]
+        # Provide enough time values for all calls
+        mock_time.side_effect = [100.0, 101.0, 102.0, 103.0]
 
         # Create an async generator function that raises an exception
         async def mock_generator(*args: Any, **kwargs: Any) -> Any:
             raise Exception("Stream test error")
             yield None  # type: ignore[unreachable]
 
-        # mock_llm.astream should be a method that returns the async generator
-        mock_llm.astream = MagicMock(return_value=mock_generator())
-
         streaming = ChatStreaming(model_name="test-model")
+
+        # Mock the base_chain.astream method to raise an exception
+        streaming.base_chain = MagicMock()
+        streaming.base_chain.astream = mock_generator
 
         results: List[Dict[str, Any]] = []
 
@@ -522,7 +540,7 @@ class TestChatStreaming:
         assert "Stream test error" in results[0]["error"]
         assert results[0]["is_complete"]
 
-    @patch("langchain_llm_config.assistant.chat_streaming.ChatOpenAI")
+    @patch("langchain_llm_config.assistant.base.ChatOpenAI")
     @patch("time.time")
     def test_chat_stream_method_empty_response(
         self, mock_time: MagicMock, mock_chat_openai: MagicMock
@@ -539,9 +557,11 @@ class TestChatStreaming:
             if False:  # This will never be True, so no chunks will be yielded
                 yield None  # type: ignore[unreachable]
 
-        mock_llm.astream = mock_stream
-
         streaming = ChatStreaming(model_name="test-model")
+
+        # Mock the base_chain.astream method
+        streaming.base_chain = MagicMock()
+        streaming.base_chain.astream = mock_stream
 
         results: List[Dict[str, Any]] = []
 
@@ -551,7 +571,7 @@ class TestChatStreaming:
 
         asyncio.run(collect_stream())
 
-        # Verify only final result
+        # Verify only final result (empty stream should still produce final result)
         assert len(results) == 1
         assert results[0]["type"] == "final"
         assert results[0]["content"] == ""

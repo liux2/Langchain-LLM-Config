@@ -92,7 +92,7 @@ class TestGeminiAssistant:
         mock_chat_gemini.assert_called_once()
         call_args = mock_chat_gemini.call_args
         # Check that SecretStr was used with the correct value
-        secret_str = call_args[1]["google_api_key"]
+        secret_str = call_args[1]["api_key"]
         assert hasattr(secret_str, "get_secret_value")
         assert secret_str.get_secret_value() == "env-test-key"
 
@@ -113,7 +113,7 @@ class TestGeminiAssistant:
         mock_chat_gemini.assert_called_once()
         call_args = mock_chat_gemini.call_args
         # Check that SecretStr was used with the correct value
-        secret_str = call_args[1]["google_api_key"]
+        secret_str = call_args[1]["api_key"]
         assert hasattr(secret_str, "get_secret_value")
         assert secret_str.get_secret_value() == "dummy-key"
 
