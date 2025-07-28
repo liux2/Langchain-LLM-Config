@@ -3,7 +3,7 @@ Chat Streaming Assistant for real-time streaming responses
 """
 
 import time
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 from .base import Assistant
 
@@ -46,7 +46,7 @@ class ChatStreaming(Assistant):
 
     async def chat(
         self,
-        query: str,
+        query: Union[str, List[Dict[str, Any]]],
         extra_system_prompt: Optional[str] = None,
         context: Optional[str] = None,
         **kwargs: Any,
@@ -89,7 +89,7 @@ class ChatStreaming(Assistant):
 
     async def chat_stream(
         self,
-        query: str,
+        query: Union[str, List[Dict[str, Any]]],
         extra_system_prompt: Optional[str] = None,
         context: Optional[str] = None,
         **kwargs: Any,
@@ -164,7 +164,7 @@ class ChatStreaming(Assistant):
 
     async def stream_async(
         self,
-        query: str,
+        query: Union[str, List[Dict[str, Any]]],
         extra_system_prompt: Optional[str] = None,
         context: Optional[str] = None,
         **kwargs: Any,

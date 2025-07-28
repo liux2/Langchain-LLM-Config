@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 from langchain_core.messages import BaseMessage
 from langchain_core.output_parsers import PydanticOutputParser
@@ -184,7 +184,7 @@ class GeminiAssistant(Assistant):
 
     def ask(
         self,
-        query: str,
+        query: Union[str, List[Dict[str, Any]]],
         extra_system_prompt: Optional[str] = None,
         context: Optional[str] = None,
         **kwargs: Any,
@@ -245,7 +245,7 @@ class GeminiAssistant(Assistant):
 
     async def ask_async(
         self,
-        query: str,
+        query: Union[str, List[Dict[str, Any]]],
         extra_system_prompt: Optional[str] = None,
         context: Optional[str] = None,
         **kwargs: Any,

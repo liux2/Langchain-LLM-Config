@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 from langchain_core.messages import BaseMessage
 from langchain_core.output_parsers import PydanticOutputParser
@@ -196,7 +196,7 @@ class Assistant:
 
     def ask(
         self,
-        query: str,
+        query: Union[str, List[Dict[str, Any]]],
         extra_system_prompt: Optional[str] = None,
         context: Optional[str] = None,
         **kwargs: Any,
@@ -205,7 +205,7 @@ class Assistant:
         处理用户查询并返回响应（同步版本）
 
         Args:
-            query: 用户查询文本
+            query: 用户查询文本或多模态内容列表
             extra_system_prompt: 额外的系统提示
             context: 可选的上下文信息
             **kwargs: 额外参数
@@ -258,7 +258,7 @@ class Assistant:
 
     async def ask_async(
         self,
-        query: str,
+        query: Union[str, List[Dict[str, Any]]],
         extra_system_prompt: Optional[str] = None,
         context: Optional[str] = None,
         **kwargs: Any,
@@ -267,7 +267,7 @@ class Assistant:
         处理用户查询并返回响应（异步版本）
 
         Args:
-            query: 用户查询文本
+            query: 用户查询文本或多模态内容列表
             extra_system_prompt: 额外的系统提示
             context: 可选的上下文信息
             **kwargs: 额外参数
