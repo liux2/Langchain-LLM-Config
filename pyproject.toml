@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "langchain-llm-config"
-version = "0.1.5"
+version = "0.1.6"
 description = "A comprehensive LLM configuration package supporting multiple providers (OpenAI, VLLM, Gemini, Infinity) for chat assistants and embeddings"
 readme = "README.md"
 license = {text = "MIT"}
