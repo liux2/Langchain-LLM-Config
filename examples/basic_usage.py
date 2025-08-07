@@ -86,13 +86,16 @@ async def embedding_example() -> None:
     print(f"Each embedding has {len(embeddings[0])} dimensions")
 
     # Show similarity between first two texts (should be high)
-    from numpy import dot
-    from numpy.linalg import norm
+    try:
+        from numpy import dot  # type: ignore[import-not-found]
+        from numpy.linalg import norm  # type: ignore[import-not-found]
 
-    similarity = dot(embeddings[0], embeddings[1]) / (
-        norm(embeddings[0]) * norm(embeddings[1])
-    )
-    print(f"Similarity between texts 1 and 2: {similarity:.3f}")
+        similarity = dot(embeddings[0], embeddings[1]) / (
+            norm(embeddings[0]) * norm(embeddings[1])
+        )
+        print(f"Similarity between texts 1 and 2: {similarity:.3f}")
+    except ImportError:
+        print("NumPy not available - skipping similarity calculation")
 
 
 async def streaming_example() -> None:

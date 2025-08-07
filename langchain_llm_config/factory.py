@@ -1,40 +1,62 @@
-from typing import Any, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
 from pydantic import BaseModel
 
 from .assistant.base import Assistant
 from .assistant.chat_streaming import ChatStreaming
-from .assistant.providers.gemini import GeminiAssistant
 from .assistant.providers.vllm import VLLMAssistant
 from .config import load_config
 from .embeddings.base import BaseEmbeddingProvider
-from .embeddings.providers.gemini import GeminiEmbeddingProvider
-from .embeddings.providers.infinity import InfinityEmbeddingProvider
 from .embeddings.providers.openai import OpenAIEmbeddingProvider
 from .embeddings.providers.vllm import VLLMEmbeddingProvider
 
-# 助手提供者映射
+# Optional imports with proper typing
+if TYPE_CHECKING:
+    from .assistant.providers.gemini import GeminiAssistant
+    from .embeddings.providers.gemini import GeminiEmbeddingProvider
+    from .embeddings.providers.infinity import InfinityEmbeddingProvider
+else:
+    try:
+        from .assistant.providers.gemini import GeminiAssistant
+    except ImportError:
+        GeminiAssistant = None  # type: ignore[misc,assignment]
+
+    try:
+        from .embeddings.providers.gemini import GeminiEmbeddingProvider
+    except ImportError:
+        GeminiEmbeddingProvider = None  # type: ignore[misc,assignment]
+
+    try:
+        from .embeddings.providers.infinity import InfinityEmbeddingProvider
+    except ImportError:
+        InfinityEmbeddingProvider = None  # type: ignore[misc,assignment]
+
+# Build provider mappings dynamically based on available imports
 _ASSISTANT_PROVIDERS = {
     "vllm": VLLMAssistant,
     "openai": Assistant,
-    "gemini": GeminiAssistant,
 }
 
-# Type alias for concrete embedding providers
+if GeminiAssistant is not None:
+    _ASSISTANT_PROVIDERS["gemini"] = GeminiAssistant
+
+# Build embedding provider mappings
+_EMBEDDING_PROVIDERS = {
+    "openai": OpenAIEmbeddingProvider,
+    "vllm": VLLMEmbeddingProvider,
+}
+
+if InfinityEmbeddingProvider is not None:
+    _EMBEDDING_PROVIDERS["infinity"] = InfinityEmbeddingProvider
+
+if GeminiEmbeddingProvider is not None:
+    _EMBEDDING_PROVIDERS["gemini"] = GeminiEmbeddingProvider
+
+# Type alias for concrete embedding providers (build dynamically)
 EmbeddingProviderType = Union[
     OpenAIEmbeddingProvider,
-    InfinityEmbeddingProvider,
     VLLMEmbeddingProvider,
-    GeminiEmbeddingProvider,
 ]
-
-# 嵌入提供者映射
-_EMBEDDING_PROVIDERS: Dict[str, Type[EmbeddingProviderType]] = {
-    "openai": OpenAIEmbeddingProvider,
-    "infinity": InfinityEmbeddingProvider,
-    "vllm": VLLMEmbeddingProvider,
-    "gemini": GeminiEmbeddingProvider,
-}
 
 
 def create_assistant(
@@ -164,7 +186,7 @@ def create_chat_streaming(
 
 def create_embedding_provider(
     provider: Optional[str] = None, config_path: Optional[str] = None, **kwargs: Any
-) -> EmbeddingProviderType:
+) -> BaseEmbeddingProvider:
     """
     创建嵌入提供者实例
 
@@ -184,6 +206,6 @@ def create_embedding_provider(
     if provider not in _EMBEDDING_PROVIDERS:
         raise ValueError(f"未知的嵌入提供者: {provider}")
 
-    provider_class: Type[EmbeddingProviderType] = _EMBEDDING_PROVIDERS[provider]
+    provider_class = _EMBEDDING_PROVIDERS[provider]
 
     return provider_class(config=config[provider]["embeddings"], **kwargs)

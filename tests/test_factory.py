@@ -14,6 +14,23 @@ from langchain_llm_config.factory import (
     create_embedding_provider,
 )
 
+# Check for optional dependencies
+try:
+    from langchain_llm_config.assistant.providers.gemini import GeminiAssistant
+
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
+try:
+    from langchain_llm_config.embeddings.providers.infinity import (
+        InfinityEmbeddingProvider,
+    )
+
+    INFINITY_AVAILABLE = True
+except ImportError:
+    INFINITY_AVAILABLE = False
+
 
 class MockResponse(BaseModel):
     """Mock response model for testing"""
@@ -80,6 +97,9 @@ class TestFactoryFunctions:
         assert isinstance(result, Assistant)
         assert result.response_model == MockResponse
 
+    @pytest.mark.skipif(
+        not GEMINI_AVAILABLE, reason="Gemini dependencies not available"
+    )
     @patch("langchain_llm_config.factory.load_config")
     def test_create_assistant_gemini_provider(
         self, mock_load_config: MagicMock
@@ -104,8 +124,6 @@ class TestFactoryFunctions:
         )
 
         # Verify the result is a GeminiAssistant instance
-        from langchain_llm_config.assistant.providers.gemini import GeminiAssistant
-
         assert isinstance(result, GeminiAssistant)
         assert result.response_model == MockResponse
 
@@ -336,6 +354,9 @@ class TestFactoryFunctions:
 
         assert isinstance(result, VLLMEmbeddingProvider)
 
+    @pytest.mark.skipif(
+        not INFINITY_AVAILABLE, reason="Infinity dependencies not available"
+    )
     @patch("langchain_llm_config.factory.load_config")
     def test_create_embedding_provider_infinity(
         self, mock_load_config: MagicMock
@@ -354,10 +375,6 @@ class TestFactoryFunctions:
         result = create_embedding_provider(provider="infinity")
 
         # Verify the result is an InfinityEmbeddingProvider instance
-        from langchain_llm_config.embeddings.providers.infinity import (
-            InfinityEmbeddingProvider,
-        )
-
         assert isinstance(result, InfinityEmbeddingProvider)
 
     @patch("langchain_llm_config.factory.load_config")

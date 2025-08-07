@@ -2,12 +2,14 @@ import asyncio
 import time
 from typing import Any, Dict, List
 
-from langchain_community.embeddings import (
-    InfinityEmbeddings as LangchainInfinityEmbeddings,
-)
 from langchain_core.embeddings import Embeddings
 
 from ..base import BaseEmbeddingProvider
+
+# isort:skip_file
+from langchain_community.embeddings import (  # type: ignore[import-not-found]
+    InfinityEmbeddings as LangchainInfinityEmbeddings,
+)
 
 
 class InfinityEmbeddingProvider(BaseEmbeddingProvider):
@@ -37,7 +39,7 @@ class InfinityEmbeddingProvider(BaseEmbeddingProvider):
     @property
     def embedding_model(self) -> Embeddings:
         """获取嵌入模型"""
-        return self._embeddings
+        return self._embeddings  # type: ignore[no-any-return]
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """
@@ -58,7 +60,7 @@ class InfinityEmbeddingProvider(BaseEmbeddingProvider):
         while retry_count < self._max_retries:
             try:
                 result = self._embeddings.embed_documents(texts)
-                return result
+                return result  # type: ignore[no-any-return]
             except Exception as e:
                 retry_count += 1
                 last_error = e
@@ -90,7 +92,7 @@ class InfinityEmbeddingProvider(BaseEmbeddingProvider):
         while retry_count < self._max_retries:
             try:
                 result = self._embeddings.embed_documents(texts)
-                return result
+                return result  # type: ignore[no-any-return]
             except Exception as e:
                 retry_count += 1
                 last_error = e

@@ -10,8 +10,16 @@ from pydantic import BaseModel, Field
 
 from langchain_llm_config import create_assistant
 from langchain_llm_config.assistant.base import Assistant
-from langchain_llm_config.assistant.providers.gemini import GeminiAssistant
 from langchain_llm_config.assistant.providers.vllm import VLLMAssistant
+
+# Optional import for Gemini
+try:
+    from langchain_llm_config.assistant.providers.gemini import GeminiAssistant
+
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GeminiAssistant = None  # type: ignore[misc,assignment]
+    GEMINI_AVAILABLE = False
 
 
 class MockResponse(BaseModel):
@@ -130,6 +138,9 @@ class TestAutoApplyParser:
         assert hasattr(assistant, "parser")
         assert assistant.chain == assistant.base_chain
 
+    @pytest.mark.skipif(
+        not GEMINI_AVAILABLE, reason="Gemini dependencies not available"
+    )
     @patch("langchain_llm_config.factory.load_config")
     def test_gemini_auto_apply_parser_true(self, mock_load_config: MagicMock) -> None:
         """Test Gemini provider with auto_apply_parser=True"""
@@ -156,6 +167,9 @@ class TestAutoApplyParser:
         assert hasattr(assistant, "parser")
         assert assistant.chain != assistant.base_chain
 
+    @pytest.mark.skipif(
+        not GEMINI_AVAILABLE, reason="Gemini dependencies not available"
+    )
     @patch("langchain_llm_config.factory.load_config")
     def test_gemini_auto_apply_parser_false(self, mock_load_config: MagicMock) -> None:
         """Test Gemini provider with auto_apply_parser=False"""
@@ -247,6 +261,9 @@ class TestAutoApplyParser:
         # Now parser should be applied
         assert assistant.chain != assistant.base_chain
 
+    @pytest.mark.skipif(
+        not GEMINI_AVAILABLE, reason="Gemini dependencies not available"
+    )
     def test_gemini_manual_parser_application(self) -> None:
         """Test manual application of parser for Gemini assistant"""
         config = {
@@ -317,6 +334,9 @@ class TestAutoApplyParser:
         assert assistant.response_model == MockResponse  # type: ignore[unreachable]
         assert assistant.chain != assistant.base_chain
 
+    @pytest.mark.skipif(
+        not GEMINI_AVAILABLE, reason="Gemini dependencies not available"
+    )
     def test_dynamic_parser_application_gemini(self) -> None:
         """Test applying parser with a new response model for Gemini assistant"""
         config = {

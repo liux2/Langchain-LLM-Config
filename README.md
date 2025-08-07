@@ -16,22 +16,56 @@ Yet another redundant Langchain abstraction: comprehensive Python package for ma
 - ⚡ **Async Support**: Full async/await support for all operations
 - 🌊 **Streaming Chat**: Real-time streaming responses for interactive experiences
 - 🛠️ **Enhanced CLI**: Environment setup and validation commands
+- 🪶 **Lightweight Core**: Minimal dependencies with optional provider-specific packages
+- 🎯 **Flexible Installation**: Install only the providers you need
 
 ## Installation
 
-### Using pip
+### Basic Installation
+
+The package has a lightweight core with optional dependencies for specific providers.
+
+**Core installation (OpenAI and VLLM support):**
 
 ```bash
+# Using uv (recommended)
+uv add langchain-llm-config
+
+# Using pip
 pip install langchain-llm-config
 ```
 
-### Using uv (recommended)
+### Provider-Specific Installation
+
+**With Gemini support:**
 
 ```bash
-uv add langchain-llm-config
+uv add "langchain-llm-config[gemini]"
+pip install "langchain-llm-config[gemini]"
 ```
 
-### Development installation
+**With Infinity embeddings support:**
+
+```bash
+uv add "langchain-llm-config[infinity]"
+pip install "langchain-llm-config[infinity]"
+```
+
+**With local models support (sentence-transformers):**
+
+```bash
+uv add "langchain-llm-config[local-models]"
+pip install "langchain-llm-config[local-models]"
+```
+
+**With all providers:**
+
+```bash
+uv add "langchain-llm-config[all]"
+pip install "langchain-llm-config[all]"
+```
+
+### Development Installation
 
 ```bash
 git clone https://github.com/liux2/Langchain-LLM-Config.git
@@ -39,6 +73,32 @@ cd langchain-llm-config
 uv sync --dev
 uv run pip install -e .
 ```
+
+## Dependency Optimization
+
+This package is designed with a **lightweight core** approach:
+
+### Core Dependencies (Always Installed)
+
+- `langchain-core` - Core abstractions only (much lighter than full `langchain`)
+- `langchain-openai` - OpenAI and VLLM provider support
+- `pydantic` - Data validation and parsing
+- `pyyaml` - Configuration file parsing
+- `python-dotenv` - Environment variable management
+- `openai` - OpenAI client library
+
+### Optional Dependencies
+
+- **Gemini**: `langchain-google-genai` - Only installed with `[gemini]` extra
+- **Infinity**: `langchain-community` - Only installed with `[infinity]` extra
+- **Local Models**: `sentence-transformers` - Only installed with `[local-models]` extra
+
+### Benefits
+
+- ✅ **Smaller installation size** - No heavy ML dependencies unless needed
+- ✅ **Faster installation** - Skip unnecessary packages
+- ✅ **Cleaner environments** - Only install what you use
+- ✅ **Better compatibility** - Avoid conflicts from unused dependencies
 
 ## Quick Start
 
@@ -126,7 +186,7 @@ class ArticleAnalysis(BaseModel):
 assistant = create_assistant(
     response_model=None,  # Explicitly set to None for raw text
     system_prompt="You are a helpful article analyzer.",
-    provider="openai",  # or "vllm", "gemini"
+    provider="openai",  # or "vllm" (core), "gemini" (requires [gemini] extra)
     auto_apply_parser=False,
 )
 
@@ -145,7 +205,9 @@ result = assistant.ask("Analyze this article: ...")
 print(result)
 
 # Create an embedding provider
-embedding_provider = create_embedding_provider(provider="openai")
+embedding_provider = create_embedding_provider(
+    provider="openai"  # or "vllm" (core), "infinity" (requires [infinity] extra)
+)
 
 # Get embeddings (synchronous)
 texts = ["Hello world", "How are you?"]
@@ -204,19 +266,19 @@ if __name__ == "__main__":
 
 ### Chat Providers
 
-| Provider | Models | Features |
-|----------|--------|----------|
-| **OpenAI** | GPT-3.5, GPT-4, etc. | Streaming, function calling, structured output |
-| **VLLM** | Any HuggingFace model | Local deployment, high performance |
-| **Gemini** | Gemini Pro, etc. | Google's latest models |
+| Provider | Models | Features | Installation |
+|----------|--------|----------|-------------|
+| **OpenAI** | GPT-3.5, GPT-4, etc. | Streaming, function calling, structured output | ✅ Core (always available) |
+| **VLLM** | Any HuggingFace model | Local deployment, high performance | ✅ Core (always available) |
+| **Gemini** | Gemini Pro, etc. | Google's latest models | 📦 `[gemini]` extra required |
 
 ### Embedding Providers
 
-| Provider | Models | Features |
-|----------|--------|----------|
-| **OpenAI** | text-embedding-ada-002, etc. | High quality, reliable |
-| **VLLM** | BGE, sentence-transformers | Local deployment |
-| **Infinity** | Various embedding models | Fast inference |
+| Provider | Models | Features | Installation |
+|----------|--------|----------|-------------|
+| **OpenAI** | text-embedding-ada-002, etc. | High quality, reliable | ✅ Core (always available) |
+| **VLLM** | BGE, sentence-transformers | Local deployment | ✅ Core (always available) |
+| **Infinity** | Various embedding models | Fast inference | 📦 `[infinity]` extra required |
 
 ## CLI Commands
 
@@ -263,7 +325,7 @@ result = await assistant.ask_async(
 ```python
 from langchain_llm_config import VLLMAssistant, OpenAIEmbeddingProvider
 
-# Use providers directly
+# Core providers (always available)
 vllm_assistant = VLLMAssistant(
     config={"api_base": "http://localhost:8000/v1", "model_name": "llama-2"},
     response_model=MyModel
@@ -272,6 +334,10 @@ vllm_assistant = VLLMAssistant(
 openai_embeddings = OpenAIEmbeddingProvider(
     config={"api_key": "your-key", "model_name": "text-embedding-ada-002"}
 )
+
+# Optional providers (require extras)
+# from langchain_llm_config import GeminiAssistant  # requires [gemini]
+# from langchain_llm_config import InfinityEmbeddingProvider  # requires [infinity]
 ```
 
 ### Complete Example with Error Handling
@@ -353,6 +419,22 @@ llm:
 ```
 
 ## Development
+
+### Testing with Different Provider Combinations
+
+```bash
+# Test core functionality only
+uv sync --extra test
+uv run pytest
+
+# Test with all providers
+uv sync --extra test --extra all
+uv run pytest
+
+# Test specific provider combinations
+uv sync --extra test --extra gemini
+uv run pytest tests/test_providers.py -k gemini
+```
 
 ### Running Tests
 

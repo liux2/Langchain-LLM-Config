@@ -9,11 +9,28 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import BaseModel, Field
 
-from langchain_llm_config.assistant.providers.gemini import GeminiAssistant
 from langchain_llm_config.assistant.providers.vllm import VLLMAssistant
-from langchain_llm_config.embeddings.providers.infinity import InfinityEmbeddingProvider
 from langchain_llm_config.embeddings.providers.openai import OpenAIEmbeddingProvider
 from langchain_llm_config.embeddings.providers.vllm import VLLMEmbeddingProvider
+
+# Optional imports
+try:
+    from langchain_llm_config.assistant.providers.gemini import GeminiAssistant
+
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GeminiAssistant = None  # type: ignore[misc,assignment]
+    GEMINI_AVAILABLE = False
+
+try:
+    from langchain_llm_config.embeddings.providers.infinity import (
+        InfinityEmbeddingProvider,
+    )
+
+    INFINITY_AVAILABLE = True
+except ImportError:
+    InfinityEmbeddingProvider = None  # type: ignore[misc,assignment]
+    INFINITY_AVAILABLE = False
 
 
 class MockResponse(BaseModel):
@@ -23,6 +40,7 @@ class MockResponse(BaseModel):
     confidence: float = Field(..., description="Confidence score", ge=0.0, le=1.0)
 
 
+@pytest.mark.skipif(not GEMINI_AVAILABLE, reason="Gemini dependencies not available")
 class TestGeminiAssistant:
     """Test Gemini assistant provider"""
 
@@ -439,6 +457,9 @@ class TestVLLMEmbeddingProvider:
             provider.embed_texts(["test document"])
 
 
+@pytest.mark.skipif(
+    not INFINITY_AVAILABLE, reason="Infinity dependencies not available"
+)
 class TestInfinityEmbeddingProvider:
     """Test Infinity embedding provider"""
 

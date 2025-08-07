@@ -5,10 +5,14 @@ from langchain_core.messages import BaseMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import Runnable, RunnablePassthrough
-from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel, SecretStr
 
 from ..base import Assistant
+
+# isort:skip_file
+from langchain_google_genai import (  # type: ignore[import-not-found]
+    ChatGoogleGenerativeAI,
+)
 
 
 class GeminiAssistant(Assistant):
