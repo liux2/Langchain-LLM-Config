@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "langchain-llm-config"
-version = "0.1.6"
+version = "0.2.0"
 description = "A comprehensive LLM configuration package supporting multiple providers (OpenAI, VLLM, Gemini, Infinity) for chat assistants and embeddings"
 readme = "README.md"
 license = {text = "MIT"}
@@ -29,32 +29,38 @@ dependencies = [
     "pydantic>=2.0.0",
     "pyyaml>=6.0",
     "python-dotenv>=1.0.0",
-    "openai>=1.0.0",
     # Core langchain packages only - much lighter!
     "langchain-core>=0.1.0",
-    "langchain-openai>=0.1.0",
 ]
 
 [project.optional-dependencies]
-# Provider-specific dependencies
+# Provider-specific dependencies for assistants
 openai = [
-    "langchain-openai>=0.1.0",  # Already in core, but explicit for clarity
+    "openai>=1.0.0",
+    "langchain-openai>=0.1.0",
+]
+vllm = [
+    "langchain-community>=0.3.27",  # For VLLMOpenAI
 ]
 gemini = [
     "langchain-google-genai>=2.0.10",
 ]
+# Provider-specific dependencies for embeddings
 infinity = [
-    "langchain-community>=0.1.0",  # Only needed for InfinityEmbeddings
+    "langchain-community>=0.1.0",  # For InfinityEmbeddings
 ]
 local-models = [
     "sentence-transformers>=2.2.0",
 ]
 # Convenience groups
-providers = [
-    "langchain-llm-config[gemini,infinity]",
+assistants = [
+    "langchain-llm-config[openai,vllm,gemini]",
+]
+embeddings = [
+    "langchain-llm-config[infinity,local-models]",
 ]
 all = [
-    "langchain-llm-config[providers,local-models]",
+    "langchain-llm-config[assistants,embeddings]",
 ]
 
 # Development and testing dependencies

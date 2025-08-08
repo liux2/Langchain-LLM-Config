@@ -25,7 +25,7 @@ Yet another redundant Langchain abstraction: comprehensive Python package for ma
 
 The package has a lightweight core with optional dependencies for specific providers.
 
-**Core installation (OpenAI and VLLM support):**
+**Core installation (minimal dependencies):**
 
 ```bash
 # Using uv (recommended)
@@ -36,6 +36,20 @@ pip install langchain-llm-config
 ```
 
 ### Provider-Specific Installation
+
+**With OpenAI support:**
+
+```bash
+uv add "langchain-llm-config[openai]"
+pip install "langchain-llm-config[openai]"
+```
+
+**With VLLM support:**
+
+```bash
+uv add "langchain-llm-config[vllm]"
+pip install "langchain-llm-config[vllm]"
+```
 
 **With Gemini support:**
 
@@ -58,7 +72,23 @@ uv add "langchain-llm-config[local-models]"
 pip install "langchain-llm-config[local-models]"
 ```
 
-**With all providers:**
+### Convenience Groups
+
+**All assistant providers (OpenAI, VLLM, Gemini):**
+
+```bash
+uv add "langchain-llm-config[assistants]"
+pip install "langchain-llm-config[assistants]"
+```
+
+**All embedding providers (Infinity, local models):**
+
+```bash
+uv add "langchain-llm-config[embeddings]"
+pip install "langchain-llm-config[embeddings]"
+```
+
+**Everything (all providers and features):**
 
 ```bash
 uv add "langchain-llm-config[all]"
@@ -150,6 +180,8 @@ llm:
       api_key: "${OPENAI_API_KEY}"
       model_name: "meta-llama/Llama-2-7b-chat-hf"
       temperature: 0.6
+      extra_body:
+        return_reasoning: false  # Set to true for reasoning output
   
   default:
     chat_provider: "openai"
@@ -239,7 +271,9 @@ async def main():
     # Create streaming chat assistant
     # Try with OpenAI first to test streaming
     streaming_chat = create_chat_streaming(
-        provider="vllm", system_prompt="You are a helpful assistant."
+        provider="vllm",
+        system_prompt="You are a helpful assistant.",
+        auto_apply_parser=False,
     )
 
     print("🤖 Starting streaming chat...")
@@ -407,6 +441,8 @@ llm:
       connect_timeout: 60
       read_timeout: 60
       model_kwargs: {}
+      extra_body:
+        return_reasoning: false  # Enable reasoning output (vLLM)
       # ... other parameters
     embeddings:
       api_base: "https://api.example.com/v1"

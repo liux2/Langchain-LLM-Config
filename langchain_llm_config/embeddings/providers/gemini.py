@@ -7,7 +7,7 @@ from langchain_core.embeddings import Embeddings
 from ..base import BaseEmbeddingProvider
 
 # isort:skip_file
-from langchain_google_genai import (  # type: ignore[import-not-found]
+from langchain_google_genai import (
     GoogleGenerativeAIEmbeddings,
 )
 

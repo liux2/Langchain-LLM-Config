@@ -28,6 +28,8 @@ llm:
       max_tokens: 8192
       connect_timeout: 30
       read_timeout: 60
+      extra_body:
+        return_reasoning: false  # Set to true to enable reasoning output for vLLM models
     embeddings:
       api_base: http://localhost:8000/v1
       api_key: ${OPENAI_API_KEY}

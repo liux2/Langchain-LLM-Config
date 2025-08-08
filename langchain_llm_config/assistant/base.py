@@ -1,58 +1,46 @@
-import os
-from typing import Any, Dict, List, Optional, Type, Union
+import time
+from abc import ABC, abstractmethod
+from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Type, Union
 
 from langchain_core.messages import BaseMessage
 from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import Runnable, RunnablePassthrough
-from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, SecretStr
+from langchain_core.runnables import Runnable
+from pydantic import BaseModel
 
 
-class Assistant:
+class Assistant(ABC):
     """
-    AI助手基类，处理结构化问答
+    AI助手抽象基类，定义所有助手实现的接口
+
+    这是一个纯接口类，定义了所有助手实现必须提供的方法和属性。
+    具体的实现应该在providers目录下的各个提供者类中。
 
     Attributes:
         system_prompt: 系统提示
         response_model: 响应模型类型
-        llm: 语言模型实例
+        auto_apply_parser: 是否自动应用解析器
         parser: 输出解析器
         prompt: 提示模板
         chain: 处理链
+        base_chain: 基础链（不包含解析器）
+        llm: 语言模型实例
     """
 
     def __init__(
         self,
-        model_name: str,
         response_model: Optional[Type[BaseModel]] = None,
-        temperature: float = 0.7,
-        max_tokens: int = 2000,
-        base_url: Optional[str] = None,
-        api_key: Optional[str] = None,
         system_prompt: Optional[str] = None,
-        top_p: float = 1.0,
-        connect_timeout: Optional[int] = None,
-        read_timeout: Optional[int] = None,
-        model_kwargs: Optional[Dict[str, Any]] = None,
         auto_apply_parser: bool = True,
+        **kwargs: Any,
     ) -> None:
         """
-        初始化AI助手
+        初始化AI助手抽象基类
 
         Args:
-            model_name: 使用的模型名称
             response_model: 响应模型类型（当auto_apply_parser=False时可选）
-            temperature: 采样温度
-            max_tokens: 最大生成token数
-            base_url: API基础URL
-            api_key: API密钥
             system_prompt: 系统提示
-            top_p: 采样参数
-            connect_timeout: 连接超时时间
-            read_timeout: 读取超时时间
-            model_kwargs: 额外的模型参数
             auto_apply_parser: 是否自动应用解析器（默认True，保持向后兼容）
+            **kwargs: 额外参数，由具体实现处理
         """
         # Validate parameters
         if auto_apply_parser and response_model is None:
@@ -65,94 +53,215 @@ class Assistant:
         self.system_prompt = system_prompt
         self.response_model = response_model
         self.auto_apply_parser = auto_apply_parser
+        self.output_version = kwargs.get("output_version", "responses/v1")
 
         # Initialize parser as None with proper type annotation
         self.parser: Optional[Runnable[Union[BaseMessage, str], Any]] = None
 
-        # Ensure model_kwargs is a dictionary
-        if model_kwargs is None:
-            model_kwargs = {}
+        # These will be set by concrete implementations
+        self.llm: Any = None
+        self.prompt: Any = None
+        self.chain: Any = None
+        self.base_chain: Any = None
 
-        # Add model-specific parameters to model_kwargs
-        if max_tokens is not None:
-            model_kwargs["max_tokens"] = max_tokens
-        if top_p is not None:
-            model_kwargs["top_p"] = top_p
-
-        # 初始化LLM with only top-level accepted parameters
-        self.llm: Any = ChatOpenAI(
-            model=model_name,
-            temperature=temperature,
-            base_url=base_url,
-            api_key=SecretStr(
-                api_key or os.getenv("OPENAI_API_KEY", "dummy-key") or ""
-            ),
-            model_kwargs=model_kwargs,
-            timeout=(connect_timeout, read_timeout),
-        )
-
-        # 设置解析器
+        # Call abstract setup method
         self._setup_prompt_and_chain()
 
-        # 根据参数决定是否自动应用解析器（向后兼容）
+        # Apply parser if requested
         if auto_apply_parser:
             self.apply_parser()
 
+    @abstractmethod
     def _setup_prompt_and_chain(self) -> None:
-        """设置提示模板和处理链"""
-        if self.response_model is not None:
-            # 创建基础解析器（仅当有response_model时）
-            base_parser = PydanticOutputParser(pydantic_object=self.response_model)
+        """设置提示模板和处理链 - 由具体实现提供"""
+        pass
 
-            # 获取格式说明
-            format_instructions = base_parser.get_format_instructions()
-            escaped_format_instructions = format_instructions.replace(
-                "{", "{{"
-            ).replace("}", "}}")
+    def _validate_reasoning_params(self, reasoning: Dict[str, Any]) -> None:
+        """
+        Validate reasoning parameters according to OpenAI requirements
 
-            # 创建带重试的解析器
-            self.parser = base_parser.with_retry(
-                stop_after_attempt=3,
-                retry_if_exception_type=(ValueError, KeyError),
+        Args:
+            reasoning: Dictionary containing reasoning parameters
+
+        Raises:
+            ValueError: If reasoning parameters are invalid
+        """
+        if not isinstance(reasoning, dict):
+            raise ValueError("reasoning parameter must be a dictionary")
+
+        # Validate effort parameter
+        if "effort" in reasoning:
+            valid_efforts = ["low", "medium", "high"]
+            if reasoning["effort"] not in valid_efforts:
+                raise ValueError(
+                    f"reasoning.effort must be one of {valid_efforts}, "
+                    f"got: {reasoning['effort']}"
+                )
+
+        # Validate summary parameter
+        if "summary" in reasoning:
+            valid_summaries = ["auto", "concise", "detailed", None]
+            if reasoning["summary"] not in valid_summaries:
+                raise ValueError(
+                    f"reasoning.summary must be one of {valid_summaries}, "
+                    f"got: {reasoning['summary']}"
+                )
+
+    @staticmethod
+    def get_reasoning_example() -> Dict[str, Any]:
+        """
+        Get an example of valid reasoning parameters
+
+        Returns:
+            Dictionary with example reasoning parameters
+        """
+        return {
+            "effort": "medium",  # 'low', 'medium', or 'high'
+            "summary": "auto",  # 'auto', 'concise', 'detailed', or None
+        }
+
+    def _extract_reasoning(self, output: Any) -> Optional[str]:
+        """
+        Extract reasoning content from LLM output
+
+        Args:
+            output: The LLM output object
+
+        Returns:
+            Reasoning content if found, None otherwise
+        """
+        # Try different extraction methods
+        reasoning = self._extract_responses_v1_reasoning(output)
+        if reasoning:
+            return reasoning
+
+        reasoning = self._extract_think_tags_reasoning(output)
+        if reasoning:
+            return reasoning
+
+        reasoning = self._extract_legacy_reasoning(output)
+        if reasoning:
+            return reasoning
+
+        return None
+
+    def _extract_responses_v1_reasoning(self, output: Any) -> Optional[str]:
+        """Extract reasoning from responses/v1 format."""
+        if not (hasattr(output, "content") and isinstance(output.content, list)):
+            return None
+
+        for block in output.content:
+            if isinstance(block, dict) and block.get("type") == "reasoning":
+                summary = block.get("summary", [])
+                if summary and isinstance(summary, list):
+                    reasoning_texts = [
+                        item["text"]
+                        for item in summary
+                        if isinstance(item, dict) and "text" in item
+                    ]
+                    if reasoning_texts:
+                        return "\n".join(reasoning_texts)
+        return None
+
+    def _extract_think_tags_reasoning(self, output: Any) -> Optional[str]:
+        """Extract reasoning from <think> tags."""
+        if not (hasattr(output, "content") and isinstance(output.content, str)):
+            return None
+
+        import re
+
+        think_pattern = r"<think>(.*?)</think>"
+        matches = re.findall(think_pattern, output.content, re.DOTALL)
+        if matches:
+            return "\n".join(match.strip() for match in matches)
+        return None
+
+    def _extract_legacy_reasoning(self, output: Any) -> Optional[str]:
+        """Extract reasoning from legacy additional_kwargs format."""
+        if not (hasattr(output, "additional_kwargs") and output.additional_kwargs):
+            return None
+
+        additional_kwargs = output.additional_kwargs
+        if isinstance(additional_kwargs, dict) and "content" in additional_kwargs:
+            reasoning_content = additional_kwargs["content"]
+            if reasoning_content and isinstance(reasoning_content, str):
+                return str(reasoning_content)
+        return None
+
+    def _extract_reasoning_from_text(self, text: str) -> Optional[str]:
+        """
+        Extract reasoning content from text string (for direct string outputs)
+
+        Args:
+            text: Raw text content
+
+        Returns:
+            Reasoning content if found, None otherwise
+        """
+        import re
+
+        think_pattern = r"<think>(.*?)</think>"
+        matches = re.findall(think_pattern, text, re.DOTALL)
+        if matches:
+            return "\n".join(match.strip() for match in matches)
+        return None
+
+    def _clean_content_for_parsing(self, content: str) -> str:
+        """
+        Clean content by removing reasoning tags before JSON parsing
+
+        Args:
+            content: Raw content from LLM
+
+        Returns:
+            Cleaned content ready for JSON parsing
+        """
+        import re
+
+        # Remove <think> tags and their content
+        cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL)
+        return cleaned.strip()
+
+    def _build_system_prompt(self, extra_system_prompt: Optional[str] = None) -> str:
+        """Build the complete system prompt."""
+        system_prompt = self.system_prompt or ""
+        if extra_system_prompt:
+            system_prompt = (
+                f"{system_prompt}\n{extra_system_prompt}"
+                if system_prompt
+                else extra_system_prompt
             )
+        return system_prompt
 
-            # 创建结构化提示模板（用于JSON输出）
-            self.prompt = PromptTemplate(
-                template=(
-                    "{system_prompt}\n"
-                    "请严格按照以下格式提供您的回答。您的回答必须：\n"
-                    "1. 完全符合指定的JSON格式\n"
-                    "2. 不要添加任何额外的解释或注释\n"
-                    "3. 对于有默认值的字段（如intension、language），如果不知道具体值，"
-                    "请直接省略该字段，不要使用null\n"
-                    "4. 对于没有默认值的可选字段，如果确实没有值，才使用null\n"
-                    "5. 必须使用标准ASCII字符作为JSON语法（如 : 而不是 ：）\n"
-                    "格式要求：\n"
-                    "{format_instructions}\n\n"
-                    "{context}\n"
-                    "用户: {question}\n"
-                    "助手:"
-                ),
-                input_variables=["question", "system_prompt", "context"],
-                partial_variables={"format_instructions": escaped_format_instructions},
-            )
+    def _build_context_string(self, context: Optional[str] = None) -> str:
+        """Build the context string."""
+        return f"背景信息：{context}" if context else ""
+
+    def _extract_raw_content(self, output: Any) -> str:
+        """Extract raw content from different output types."""
+        if hasattr(output, "content"):
+            # Message object with content attribute
+            return str(output.content)
+        elif isinstance(output, str):
+            # Direct string output (e.g., from VLLMOpenAI)
+            return output
         else:
-            # 没有response_model时，使用简单的提示模板（用于原始文本输出）
-            self.parser = None
-            self.prompt = PromptTemplate(
-                template=(
-                    "{system_prompt}\n" "{context}\n" "用户: {question}\n" "助手:"
-                ),
-                input_variables=["question", "system_prompt", "context"],
-            )
+            # Fallback: convert to string
+            return str(output)
 
-        # 构建基础链（不包含解析器）
-        from langchain_core.runnables import Runnable
-
-        self.base_chain: Runnable = RunnablePassthrough() | self.prompt | self.llm
-
-        # 初始化时使用基础链
-        self.chain: Runnable = self.base_chain
+    def _process_parsed_response(
+        self, parsed_response: Any, reasoning: Optional[str]
+    ) -> Dict[str, Any]:
+        """Process parsed response and add reasoning if available."""
+        if self.output_version == "responses/v1":
+            # New format with reasoning support
+            result = {"response": parsed_response}
+            if reasoning:
+                result["reasoning"] = reasoning
+            return result
+        else:
+            # Legacy format - return parsed response directly
+            return {"response": parsed_response}  # Ensure dict format
 
     def apply_parser(self, response_model: Optional[Type[BaseModel]] = None) -> None:
         """
@@ -169,9 +278,8 @@ class Assistant:
         """
         if response_model is not None:
             # 创建新的解析器
-            from langchain_core.output_parsers import PydanticOutputParser
-
             base_parser = PydanticOutputParser(pydantic_object=response_model)
+            self._base_parser = base_parser  # Store the original parser
             self.parser = base_parser.with_retry(
                 stop_after_attempt=3,
                 retry_if_exception_type=(ValueError, KeyError),
@@ -194,7 +302,7 @@ class Assistant:
         assert self.parser is not None
         self.chain = self.base_chain | self.parser
 
-    def ask(
+    def ask(  # noqa: C901
         self,
         query: Union[str, List[Dict[str, Any]]],
         extra_system_prompt: Optional[str] = None,
@@ -230,33 +338,83 @@ class Assistant:
             # 构建上下文信息
             context_str = f"背景信息：{context}" if context else ""
 
-            # 获取输出
-            output = self.chain.invoke(
-                {
-                    "question": query,
-                    "system_prompt": system_prompt,
-                    "context": context_str,
-                }
-            )
+            # 检查是否应用了解析器
+            if self.parser is not None:
+                # 使用基础链获取原始输出，然后手动处理
+                output = self.base_chain.invoke(
+                    {
+                        "question": query,
+                        "system_prompt": system_prompt,
+                        "context": context_str,
+                    }
+                )
 
-            # 检查是否应用了解析器（通过检查解析器状态而不是输出类型）
-            if self.parser is not None and hasattr(output, "model_dump"):
-                # 解析器已应用，返回结构化数据
-                result: Dict[str, Any] = output.model_dump()
-                return result
+                # Extract reasoning from raw output
+                reasoning = self._extract_reasoning(output)
+
+                # Handle different output types
+                if hasattr(output, "content"):
+                    # Message object with content attribute
+                    raw_content = output.content
+                elif isinstance(output, str):
+                    # Direct string output (e.g., from VLLMOpenAI)
+                    raw_content = output
+                else:
+                    # Fallback to string conversion
+                    raw_content = str(output)
+
+                # Extract reasoning from raw content
+                reasoning = self._extract_reasoning_from_text(raw_content)
+
+                # Clean content for parsing
+                cleaned_content = self._clean_content_for_parsing(raw_content)
+
+                # Parse the cleaned content
+                try:
+                    parsed_result = self._base_parser.parse(cleaned_content)
+                    result: Dict[str, Any] = parsed_result.model_dump()
+
+                    return result
+                except Exception as e:
+                    # If parsing fails, return error with reasoning
+                    error_result = {
+                        "error": f"Failed to parse response: {str(e)}",
+                        "raw_content": cleaned_content,
+                    }
+                    if reasoning:
+                        error_result["reasoning_content"] = reasoning
+                    return error_result
             else:
-                # 解析器未应用，返回原始LLM输出的文本内容
+                # 解析器未应用，使用基础链返回原始文本内容
+                output = self.base_chain.invoke(
+                    {
+                        "question": query,
+                        "system_prompt": system_prompt,
+                        "context": context_str,
+                    }
+                )
+
                 if hasattr(output, "content"):
                     content = output.content
-                    # Ensure we return a string, not another object
-                    return str(content) if content is not None else ""
+                    # Check for reasoning in output
+                    reasoning = self._extract_reasoning(output)
+
+                    # Return enhanced response with reasoning if available
+                    if reasoning:
+                        return {
+                            "content": str(content) if content is not None else "",
+                            "reasoning_content": reasoning,
+                        }
+                    else:
+                        # Ensure we return a string, not another object
+                        return str(content) if content is not None else ""
                 else:
                     return str(output)
 
         except Exception as e:
             raise ValueError(f"处理查询时出错: {str(e)}") from e
 
-    async def ask_async(
+    async def ask_async(  # noqa: C901
         self,
         query: Union[str, List[Dict[str, Any]]],
         extra_system_prompt: Optional[str] = None,
@@ -292,28 +450,347 @@ class Assistant:
             # 构建上下文信息
             context_str = f"背景信息：{context}" if context else ""
 
-            # 获取输出
-            output = await self.chain.ainvoke(
+            # 检查是否应用了解析器
+            if self.parser is not None:
+                # 使用基础链获取原始输出，然后手动处理
+                output = await self.base_chain.ainvoke(
+                    {
+                        "question": query,
+                        "system_prompt": system_prompt,
+                        "context": context_str,
+                    }
+                )
+
+                # Extract reasoning from raw output
+                reasoning = self._extract_reasoning(output)
+
+                # Clean content for parsing
+                if hasattr(output, "content"):
+                    raw_content = output.content
+                    cleaned_content = self._clean_content_for_parsing(raw_content)
+
+                    # Parse the cleaned content
+                    try:
+                        parsed_result = self._base_parser.parse(cleaned_content)
+                        result: Dict[str, Any] = parsed_result.model_dump()
+
+                        # Add reasoning if available
+                        if reasoning:
+                            result["reasoning_content"] = reasoning
+
+                        return result
+                    except Exception as e:
+                        # If parsing fails, return error with reasoning
+                        error_result = {
+                            "error": f"Failed to parse response: {str(e)}",
+                            "raw_content": cleaned_content,
+                        }
+                        if reasoning:
+                            error_result["reasoning_content"] = reasoning
+                        return error_result
+                else:
+                    return {"error": "No content in output"}
+            else:
+                # 解析器未应用，使用基础链返回原始文本内容
+                output = await self.base_chain.ainvoke(
+                    {
+                        "question": query,
+                        "system_prompt": system_prompt,
+                        "context": context_str,
+                    }
+                )
+
+                if hasattr(output, "content"):
+                    content = output.content
+                    # Check for reasoning in output
+                    reasoning = self._extract_reasoning(output)
+
+                    # Return enhanced response with reasoning if available
+                    if reasoning:
+                        return {
+                            "content": str(content) if content is not None else "",
+                            "reasoning_content": reasoning,
+                        }
+                    else:
+                        # Ensure we return a string, not another object
+                        return str(content) if content is not None else ""
+                else:
+                    return str(output)
+
+        except Exception as e:
+            raise ValueError(f"处理查询时出错: {str(e)}") from e
+
+    def chat(
+        self,
+        query: Union[str, List[Dict[str, Any]]],
+        extra_system_prompt: Optional[str] = None,
+        context: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Generator[str, None, None]:
+        """
+        处理用户查询并返回流式响应（同步版本）
+
+        Args:
+            query: 用户查询文本或多模态内容列表
+            extra_system_prompt: 额外的系统提示
+            context: 可选的上下文信息
+            **kwargs: 额外参数
+
+        Yields:
+            流式响应的文本片段
+
+        Raises:
+            ValueError: 当处理查询时发生错误
+        """
+        try:
+            # 构建系统提示
+            system_prompt = self.system_prompt or ""
+            if extra_system_prompt:
+                system_prompt = (
+                    f"{system_prompt}\n{extra_system_prompt}"
+                    if system_prompt
+                    else extra_system_prompt
+                )
+
+            # 构建上下文信息
+            context_str = f"背景信息：{context}" if context else ""
+
+            # 使用基础链进行流式响应（不应用解析器）
+            for chunk in self.base_chain.stream(
                 {
                     "question": query,
                     "system_prompt": system_prompt,
                     "context": context_str,
                 }
-            )
+            ):
+                # Handle different chunk types
+                if hasattr(chunk, "content") and chunk.content:
+                    # Message object with content attribute (e.g., ChatOpenAI)
+                    content = chunk.content
+                    # Ensure content is a string
+                    if isinstance(content, list):
+                        content = "".join(str(item) for item in content)
+                    yield content
+                elif isinstance(chunk, str) and chunk:
+                    # Direct string chunk (e.g., VLLMOpenAI)
+                    yield chunk
 
-            # 检查是否应用了解析器（通过检查解析器状态而不是输出类型）
-            if self.parser is not None and hasattr(output, "model_dump"):
-                # 解析器已应用，返回结构化数据
-                result: Dict[str, Any] = output.model_dump()
-                return result
-            else:
-                # 解析器未应用，返回原始LLM输出的文本内容
-                if hasattr(output, "content"):
-                    content = output.content
-                    # Ensure we return a string, not another object
-                    return str(content) if content is not None else ""
-                else:
-                    return str(output)
+        except Exception as e:
+            raise ValueError(f"处理查询时出错: {str(e)}") from e
+
+    async def chat_async(
+        self,
+        query: Union[str, List[Dict[str, Any]]],
+        extra_system_prompt: Optional[str] = None,
+        context: Optional[str] = None,
+        **kwargs: Any,
+    ) -> AsyncGenerator[str, None]:
+        """
+        处理用户查询并返回流式响应（异步版本）
+
+        Args:
+            query: 用户查询文本或多模态内容列表
+            extra_system_prompt: 额外的系统提示
+            context: 可选的上下文信息
+            **kwargs: 额外参数
+
+        Yields:
+            流式响应的文本片段
+
+        Raises:
+            ValueError: 当处理查询时发生错误
+        """
+        try:
+            # 构建系统提示
+            system_prompt = self.system_prompt or ""
+            if extra_system_prompt:
+                system_prompt = (
+                    f"{system_prompt}\n{extra_system_prompt}"
+                    if system_prompt
+                    else extra_system_prompt
+                )
+
+            # 构建上下文信息
+            context_str = f"背景信息：{context}" if context else ""
+
+            # 使用基础链进行流式响应（不应用解析器）
+            async for chunk in self.base_chain.astream(
+                {
+                    "question": query,
+                    "system_prompt": system_prompt,
+                    "context": context_str,
+                }
+            ):
+                # Handle different chunk types
+                if hasattr(chunk, "content") and chunk.content:
+                    # Message object with content attribute (e.g., ChatOpenAI)
+                    content = chunk.content
+                    # Ensure content is a string
+                    if isinstance(content, list):
+                        content = "".join(str(item) for item in content)
+                    yield content
+                elif isinstance(chunk, str) and chunk:
+                    # Direct string chunk (e.g., VLLMOpenAI)
+                    yield chunk
+
+        except Exception as e:
+            raise ValueError(f"处理查询时出错: {str(e)}") from e
+
+    @abstractmethod
+    def _get_model_name(self) -> str:
+        """获取模型名称 - 由具体实现提供"""
+        pass
+
+    async def chat_stream(
+        self,
+        query: Union[str, List[Dict[str, Any]]],
+        extra_system_prompt: Optional[str] = None,
+        context: Optional[str] = None,
+        **kwargs: Any,
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        流式聊天响应，返回带有元数据的丰富流式数据
+
+        Args:
+            query: 用户查询文本或多模态内容列表
+            extra_system_prompt: 额外的系统提示
+            context: 可选的上下文信息
+            **kwargs: 额外参数
+
+        Yields:
+            包含以下字段的字典:
+            - type: "stream", "final", "error"
+            - content: 文本内容
+            - full_response: 完整响应（仅在stream类型中）
+            - processing_time: 处理时间
+            - model_used: 使用的模型名称
+            - is_complete: 是否完成
+
+        Raises:
+            ValueError: 当处理查询时发生错误
+        """
+        start_time = time.time()
+        full_response = ""
+
+        try:
+            # 构建系统提示
+            system_prompt = self.system_prompt or ""
+            if extra_system_prompt:
+                system_prompt = (
+                    f"{system_prompt}\n{extra_system_prompt}"
+                    if system_prompt
+                    else extra_system_prompt
+                )
+
+            # 构建上下文信息
+            context_str = f"背景信息：{context}" if context else ""
+
+            # 使用基础链进行流式响应（不应用解析器）
+            async for chunk in self.base_chain.astream(
+                {
+                    "question": query,
+                    "system_prompt": system_prompt,
+                    "context": context_str,
+                }
+            ):
+                # Handle different chunk types
+                content = None
+                if hasattr(chunk, "content") and chunk.content:
+                    # Message object with content attribute (e.g., ChatOpenAI)
+                    content = chunk.content
+                    # Ensure content is a string
+                    if isinstance(content, list):
+                        content = "".join(str(item) for item in content)
+                elif isinstance(chunk, str) and chunk:
+                    # Direct string chunk (e.g., VLLMOpenAI)
+                    content = chunk
+
+                if content:
+                    full_response += content
+
+                    yield {
+                        "type": "stream",
+                        "content": content,
+                        "full_response": full_response,
+                        "processing_time": time.time() - start_time,
+                        "model_used": self._get_model_name(),
+                        "is_complete": False,
+                    }
+
+            # Send final message
+            yield {
+                "type": "final",
+                "content": "",
+                "full_response": full_response,
+                "processing_time": time.time() - start_time,
+                "model_used": self._get_model_name(),
+                "is_complete": True,
+            }
+
+        except Exception as e:
+            yield {
+                "type": "error",
+                "content": f"处理查询时出错: {str(e)}",
+                "full_response": full_response,
+                "processing_time": time.time() - start_time,
+                "model_used": self._get_model_name(),
+                "is_complete": True,
+            }
+
+    async def stream_async(
+        self,
+        query: Union[str, List[Dict[str, Any]]],
+        extra_system_prompt: Optional[str] = None,
+        context: Optional[str] = None,
+        **kwargs: Any,
+    ) -> AsyncGenerator[str, None]:
+        """
+        简化的流式响应，仅返回文本内容
+
+        Args:
+            query: 用户查询文本或多模态内容列表
+            extra_system_prompt: 额外的系统提示
+            context: 可选的上下文信息
+            **kwargs: 额外参数
+
+        Yields:
+            文本片段
+
+        Raises:
+            ValueError: 当处理查询时发生错误
+        """
+        try:
+            # 构建系统提示
+            system_prompt = self.system_prompt or ""
+            if extra_system_prompt:
+                system_prompt = (
+                    f"{system_prompt}\n{extra_system_prompt}"
+                    if system_prompt
+                    else extra_system_prompt
+                )
+
+            # 构建上下文信息
+            context_str = f"背景信息：{context}" if context else ""
+
+            # 使用基础链进行流式响应（不应用解析器）
+            async for chunk in self.base_chain.astream(
+                {
+                    "question": query,
+                    "system_prompt": system_prompt,
+                    "context": context_str,
+                }
+            ):
+                # Handle different chunk types
+                if hasattr(chunk, "content") and chunk.content:
+                    # Message object with content attribute (e.g., ChatOpenAI)
+                    content = chunk.content
+                    # Ensure content is a string
+                    if isinstance(content, list):
+                        content = "".join(str(item) for item in content)
+                    yield content
+                elif isinstance(chunk, str) and chunk:
+                    # Direct string chunk (e.g., VLLMOpenAI)
+                    yield chunk
 
         except Exception as e:
             raise ValueError(f"处理查询时出错: {str(e)}") from e

@@ -100,23 +100,22 @@ async def embedding_example() -> None:
 
 async def streaming_example() -> None:
     """Example of streaming chat"""
-    print("\n🌊 Creating streaming chat...")
+    print("\n🌊 Creating streaming assistant...")
 
-    from langchain_llm_config import create_chat_streaming
+    from langchain_llm_config import create_assistant
 
-    # Create a streaming chat instance
-    streaming_chat = create_chat_streaming(
+    # Create an assistant instance
+    assistant = create_assistant(
         provider="openai",
         system_prompt="You are a helpful assistant that provides concise answers.",
+        auto_apply_parser=False,  # For streaming, we don't use structured output
     )
 
     print("💬 Streaming response...")
     print("Response: ", end="", flush=True)
 
-    # Stream the response
-    async for chunk in streaming_chat.stream_async(
-        "Explain quantum computing in simple terms"
-    ):
+    # Stream the response using the chat method
+    async for chunk in assistant.achat("Explain quantum computing in simple terms"):
         print(chunk, end="", flush=True)
 
     print("\n")

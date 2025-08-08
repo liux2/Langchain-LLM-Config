@@ -7,15 +7,11 @@ including OpenAI, VLLM, Gemini, and Infinity for both chat assistants and embedd
 
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 # Import base classes for extensibility
 from .assistant.base import Assistant
-from .assistant.chat_streaming import ChatStreaming
 from .assistant.multimodal import create_image_content, create_multimodal_query
-
-# Import provider classes
-from .assistant.providers.vllm import VLLMAssistant
 
 # Import configuration functions
 from .config import (
@@ -24,28 +20,50 @@ from .config import (
     load_config,
 )
 from .embeddings.base import BaseEmbeddingProvider
-from .embeddings.providers.openai import OpenAIEmbeddingProvider
-from .embeddings.providers.vllm import VLLMEmbeddingProvider
+
+
+def _safe_import(module_path: str, class_name: str) -> Any:
+    """Safely import a class, returning None if import fails."""
+    try:
+        module = __import__(module_path, fromlist=[class_name])
+        return getattr(module, class_name)
+    except ImportError:
+        return None
+
 
 # Optional imports - only available if dependencies are installed
 if TYPE_CHECKING:
     from .assistant.providers.gemini import GeminiAssistant
+    from .assistant.providers.openai import OpenAIAssistant
+    from .assistant.providers.vllm import VLLMAssistant
     from .embeddings.providers.infinity import InfinityEmbeddingProvider
+    from .embeddings.providers.openai import OpenAIEmbeddingProvider
+    from .embeddings.providers.vllm import VLLMEmbeddingProvider
 else:
-    try:
-        from .assistant.providers.gemini import GeminiAssistant
-    except ImportError:
-        GeminiAssistant = None  # type: ignore[misc,assignment]
-
-    try:
-        from .embeddings.providers.infinity import InfinityEmbeddingProvider
-    except ImportError:
-        InfinityEmbeddingProvider = None  # type: ignore[misc,assignment]
+    # Import providers using helper function to reduce complexity
+    OpenAIAssistant = _safe_import(
+        "langchain_llm_config.assistant.providers.openai", "OpenAIAssistant"
+    )
+    OpenAIEmbeddingProvider = _safe_import(
+        "langchain_llm_config.embeddings.providers.openai", "OpenAIEmbeddingProvider"
+    )
+    VLLMAssistant = _safe_import(
+        "langchain_llm_config.assistant.providers.vllm", "VLLMAssistant"
+    )
+    VLLMEmbeddingProvider = _safe_import(
+        "langchain_llm_config.embeddings.providers.vllm", "VLLMEmbeddingProvider"
+    )
+    GeminiAssistant = _safe_import(
+        "langchain_llm_config.assistant.providers.gemini", "GeminiAssistant"
+    )
+    InfinityEmbeddingProvider = _safe_import(
+        "langchain_llm_config.embeddings.providers.infinity",
+        "InfinityEmbeddingProvider",
+    )
 
 # Import main factory functions
-from .factory import (
+from .factory import (  # noqa: E402
     create_assistant,
-    create_chat_streaming,
     create_embedding_provider,
 )
 
@@ -56,7 +74,7 @@ try:
     __version__ = version("langchain-llm-config")
 except ImportError:
     # Fallback for Python < 3.8
-    __version__ = "0.1.6"
+    __version__ = "0.2.0"
 __author__ = "Xingbang Liu"
 __email__ = "xingbangliu48@gmail.com"
 
@@ -69,7 +87,6 @@ __all__ = [
     "TIKTOKEN_CACHE_DIR",
     # Factory functions
     "create_assistant",
-    "create_chat_streaming",
     "create_embedding_provider",
     # Configuration functions
     "load_config",
@@ -77,19 +94,22 @@ __all__ = [
     "get_default_config_path",
     # Base classes
     "Assistant",
-    "ChatStreaming",
     "BaseEmbeddingProvider",
     # Multimodal helper functions
     "create_image_content",
     "create_multimodal_query",
-    # Provider classes (always available)
-    "VLLMAssistant",
-    "OpenAIEmbeddingProvider",
-    "VLLMEmbeddingProvider",
 ]
 
 # Add optional providers if available
+if OpenAIAssistant is not None:
+    __all__.append("OpenAIAssistant")
+if VLLMAssistant is not None:
+    __all__.append("VLLMAssistant")
 if GeminiAssistant is not None:
     __all__.append("GeminiAssistant")
+if OpenAIEmbeddingProvider is not None:
+    __all__.append("OpenAIEmbeddingProvider")
+if VLLMEmbeddingProvider is not None:
+    __all__.append("VLLMEmbeddingProvider")
 if InfinityEmbeddingProvider is not None:
     __all__.append("InfinityEmbeddingProvider")

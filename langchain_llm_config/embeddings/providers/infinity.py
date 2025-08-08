@@ -7,7 +7,7 @@ from langchain_core.embeddings import Embeddings
 from ..base import BaseEmbeddingProvider
 
 # isort:skip_file
-from langchain_community.embeddings import (  # type: ignore[import-not-found]
+from langchain_community.embeddings import (
     InfinityEmbeddings as LangchainInfinityEmbeddings,
 )
 

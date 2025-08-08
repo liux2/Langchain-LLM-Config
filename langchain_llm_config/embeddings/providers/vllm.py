@@ -58,7 +58,7 @@ class VLLMEmbeddingProvider(BaseEmbeddingProvider):
     @property
     def embedding_model(self) -> Embeddings:
         """获取嵌入模型"""
-        return self._embeddings
+        return self._embeddings  # type: ignore[no-any-return]
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """
@@ -79,7 +79,7 @@ class VLLMEmbeddingProvider(BaseEmbeddingProvider):
         while retry_count < self._max_retries:
             try:
                 result = self._embeddings.embed_documents(texts)
-                return result
+                return result  # type: ignore[no-any-return]
             except Exception as e:
                 retry_count += 1
                 last_error = e
@@ -111,7 +111,7 @@ class VLLMEmbeddingProvider(BaseEmbeddingProvider):
         while retry_count < self._max_retries:
             try:
                 result = await self._embeddings.aembed_documents(texts)
-                return result
+                return result  # type: ignore[no-any-return]
             except Exception as e:
                 retry_count += 1
                 last_error = e
