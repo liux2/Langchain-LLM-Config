@@ -125,7 +125,7 @@ known_first_party = ["langchain_llm_config"]
 
 [tool.mypy]
 python_version = "3.9"
-warn_return_any = false
+warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
@@ -144,6 +144,37 @@ exclude = [
     ".venv/",
     "venv/",
 ]
+
+[[tool.mypy.overrides]]
+module = [
+    "pydantic.*",
+    "langchain.*",
+    "openai.*",
+    "typing_extensions",
+    "pytest.*",
+    "pytest",
+]
+ignore_missing_imports = true
+
+# Optional dependencies - ignore when not available
+[[tool.mypy.overrides]]
+module = [
+    "langchain_community.*",
+    "langchain_google_genai.*",
+    "langchain_openai.*",
+    "sentence_transformers.*",
+    "numpy.*",
+]
+ignore_missing_imports = true
+ignore_errors = true
+
+# Files with optional dependencies - don't warn about unused ignores
+[[tool.mypy.overrides]]
+module = [
+    "langchain_llm_config.embeddings.providers.*",
+    "langchain_llm_config.assistant.providers.*",
+]
+warn_unused_ignores = false
 
 [[tool.mypy.overrides]]
 module = [
