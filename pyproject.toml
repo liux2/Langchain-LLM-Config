@@ -168,13 +168,14 @@ module = [
 ignore_missing_imports = true
 ignore_errors = true
 
-# Files with optional dependencies - don't warn about unused ignores
+# Files with optional dependencies - don't warn about unused ignores or return any
 [[tool.mypy.overrides]]
 module = [
     "langchain_llm_config.embeddings.providers.*",
     "langchain_llm_config.assistant.providers.*",
 ]
 warn_unused_ignores = false
+warn_return_any = false
 
 [[tool.mypy.overrides]]
 module = [
