@@ -44,7 +44,7 @@ jobs:
 
       - name: Check types with mypy
         run: |
-          mypy langchain_llm_config tests
+          mypy --python-version=${{ matrix.python-version }} langchain_llm_config tests
 
       - name: Test with pytest
         run: |

@@ -139,6 +139,10 @@ warn_unreachable = true
 strict_equality = true
 exclude = [
     "examples/",
+    "build/",
+    "dist/",
+    ".venv/",
+    "venv/",
 ]
 
 [[tool.mypy.overrides]]
