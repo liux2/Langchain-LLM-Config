@@ -18,6 +18,11 @@ try:
 except ImportError:
     GeminiAssistant = None  # type: ignore[misc,assignment]
 
+try:
+    from .kunlun import KunlunAssistant
+except ImportError:
+    KunlunAssistant = None  # type: ignore[misc,assignment]
+
 __all__ = []
 
 if OpenAIAssistant is not None:
@@ -26,3 +31,5 @@ if VLLMAssistant is not None:
     __all__.append("VLLMAssistant")
 if GeminiAssistant is not None:
     __all__.append("GeminiAssistant")
+if KunlunAssistant is not None:
+    __all__.append("KunlunAssistant")

@@ -9,13 +9,16 @@ from pathlib import Path
 from typing import Any, Optional, Union
 
 from .config import get_default_config_path, init_config, load_config
+from .config_utils import convert_v1_to_v2, detect_config_version
 
 
 def init_command(args: argparse.Namespace) -> int:
     """Initialize a new configuration file"""
     try:
-        config_path = init_config(args.config_path)
+        format_version = getattr(args, "format", "v2")
+        config_path = init_config(args.config_path, format_version=format_version)
         print(f"✅ Configuration file created at: {config_path}")
+        print(f"📋 Format version: {format_version}")
         print("\n📝 Next steps:")
         print("1. Edit the configuration file with your API keys and settings")
         print("2. Set up your environment variables (e.g., OPENAI_API_KEY)")
@@ -39,6 +42,70 @@ def validate_command(args: argparse.Namespace) -> int:
         return 0
     except Exception as e:
         print(f"❌ Configuration validation failed: {e}")
+        return 1
+
+
+def migrate_command(args: argparse.Namespace) -> int:
+    """Migrate v1 config to v2 format"""
+    import yaml
+
+    try:
+        config_path = args.config_path or get_default_config_path()
+
+        if not Path(config_path).exists():
+            print(f"❌ Configuration file not found: {config_path}")
+            return 1
+
+        # Load raw config
+        with open(config_path, "r", encoding="utf-8") as f:
+            raw_config = yaml.safe_load(f)
+
+        # Detect version
+        try:
+            version = detect_config_version(raw_config)
+        except ValueError as e:
+            print(f"❌ {e}")
+            return 1
+
+        if version == "v2":
+            print(f"ℹ️  Configuration is already in v2 format: {config_path}")
+            return 0
+
+        # Convert to v2
+        print(f"🔄 Converting configuration from v1 to v2 format...")
+        v2_config = convert_v1_to_v2(raw_config)
+
+        # Determine output path
+        if args.output:
+            output_path = Path(args.output)
+        else:
+            # Create backup and overwrite
+            backup_path = Path(str(config_path) + ".v1.backup")
+            import shutil
+
+            shutil.copy2(config_path, backup_path)
+            print(f"📦 Backup created: {backup_path}")
+            output_path = Path(config_path)
+
+        # Write v2 config
+        with open(output_path, "w", encoding="utf-8") as f:
+            yaml.dump(
+                v2_config,
+                f,
+                default_flow_style=False,
+                allow_unicode=True,
+                sort_keys=False,
+            )
+
+        print(f"✅ Configuration migrated to v2 format: {output_path}")
+        print(f"📊 Models defined: {len(v2_config.get('models', {}))}")
+
+        return 0
+    except Exception as e:
+        print(f"❌ Migration failed: {e}")
+        import traceback
+
+        traceback.print_exc()
         return 1
 
 
@@ -170,8 +237,10 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
         Examples:
-            llm-config init                    # Initialize config in current directory
-            llm-config init ~/.config/api.yaml # Initialize config in specific location
+            llm-config init                    # Initialize v2 config in current directory
+            llm-config init --format v1        # Initialize v1 config (legacy)
+            llm-config migrate                 # Migrate v1 config to v2 format
+            llm-config migrate -o api_v2.yaml  # Migrate to new file
             llm-config setup-env               # Set up environment variables
             llm-config validate                # Validate current config
             llm-config info                    # Show package information
@@ -188,6 +257,12 @@ def main() -> int:
         "config_path",
         nargs="?",
         help="Path where to create the configuration file (default: ./api.yaml)",
+    )
+    init_parser.add_argument(
+        "--format",
+        choices=["v1", "v2"],
+        default="v2",
+        help="Configuration format version (default: v2)",
     )
     init_parser.set_defaults(func=init_command)
 
@@ -217,6 +292,22 @@ def main() -> int:
         help="Path to configuration file to validate (default: ./api.yaml)",
     )
     validate_parser.set_defaults(func=validate_command)
+
+    # Migrate command
+    migrate_parser = subparsers.add_parser(
+        "migrate", help="Migrate v1 config to v2 format"
+    )
+    migrate_parser.add_argument(
+        "config_path",
+        nargs="?",
+        help="Path to configuration file to migrate (default: ./api.yaml)",
+    )
+    migrate_parser.add_argument(
+        "-o",
+        "--output",
+        help="Output path for migrated config (default: overwrite with backup)",
+    )
+    migrate_parser.set_defaults(func=migrate_command)
 
     # Info command
     info_parser = subparsers.add_parser("info", help="Show package information")

@@ -37,9 +37,11 @@ class TestConfig:
         # Verify config structure - use non-strict mode to avoid env var errors
         config = load_config(str(result_path), strict=False)
         # load_config returns the processed llm_config (contents of "llm" key)
+        # V2 format uses "models" key instead of provider keys
         assert "default" in config
-        assert "openai" in config
-        assert "vllm" in config
+        assert "models" in config
+        # Check that some models exist
+        assert len(config["models"]) > 0
 
     def test_load_config_strict_mode_missing_env_var(
         self, test_config_file: str
@@ -76,19 +78,21 @@ class TestConfig:
         Test that non-strict mode uses default values
         for missing environment variables
         """
-        # Create a config with environment variable references
+        # Create a config with environment variable references (V2 format)
         import yaml
 
         config_with_env_vars = {
-            "llm": {
-                "gemini": {
-                    "chat": {
+            "models": {
+                "gemini-pro": {
+                    "provider_type": "gemini",
+                    "model_type": "chat",
+                    "model_config": {
                         "api_key": "${GEMINI_API_KEY}",
                         "model_name": "gemini-pro",
-                    }
-                },
-                "default": {"chat_provider": "gemini"},
-            }
+                    },
+                }
+            },
+            "default": {"chat_provider": "gemini-pro"},
         }
 
         with open(test_config_file, "w") as f:
@@ -96,25 +100,30 @@ class TestConfig:
 
         # Should not raise error and use default value
         config = load_config(test_config_file, strict=False)
-        assert config["gemini"]["chat"]["api_key"] == "demo-key-not-for-production"
+        assert (
+            config["models"]["gemini-pro"]["model_config"]["api_key"]
+            == "demo-key-not-for-production"
+        )
 
     def test_load_config_with_env_vars(
         self, test_config_file: str, mock_env_vars: Any
     ) -> None:
         """Test loading config with environment variables set"""
-        # Create a config with environment variable references
+        # Create a config with environment variable references (V2 format)
         import yaml
 
         config_with_env_vars = {
-            "llm": {
-                "openai": {
-                    "chat": {
+            "models": {
+                "gpt-3.5-turbo": {
+                    "provider_type": "openai",
+                    "model_type": "chat",
+                    "model_config": {
                         "api_key": "${OPENAI_API_KEY}",
                         "model_name": "gpt-3.5-turbo",
-                    }
-                },
-                "default": {"chat_provider": "openai"},
-            }
+                    },
+                }
+            },
+            "default": {"chat_provider": "gpt-3.5-turbo"},
         }
 
         with open(test_config_file, "w") as f:
@@ -122,7 +131,10 @@ class TestConfig:
 
         # Should use the environment variable value
         config = load_config(test_config_file, strict=True)
-        assert config["openai"]["chat"]["api_key"] == "sk-test-key-not-for-production"
+        assert (
+            config["models"]["gpt-3.5-turbo"]["model_config"]["api_key"]
+            == "sk-test-key-not-for-production"
+        )
 
 
 class TestFactory:

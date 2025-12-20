@@ -105,6 +105,35 @@ def main() -> None:
     except ValueError as e:
         print(f"✓ Expected error: {e}")
 
+    # 7. V2 Config - Using model names
+    print("\n7. V2 Config - Using model names instead of providers...")
+    assistant_v2 = create_assistant(
+        model="gpt-3.5-turbo",  # V2: Use model name
+        response_model=SimpleResponse,
+        system_prompt="You are a helpful assistant.",
+    )
+    print("✓ Assistant created with V2 config (model name)")
+    print(f"   - Model specified: gpt-3.5-turbo")
+
+    # 8. Kunlun API - Bearer token authentication
+    print("\n8. Kunlun API - Bearer token authentication...")
+    try:
+        assistant_kunlun = create_assistant(
+            model="kunlun-qwen3-32b",  # Kunlun model
+            response_model=DetailedResponse,
+            auto_apply_parser=False,  # Start without parser
+            system_prompt="You are a helpful assistant.",
+        )
+        print("✓ Kunlun assistant created")
+        print(f"   - Uses bearer token authentication")
+
+        # Apply parser dynamically
+        assistant_kunlun.apply_parser(response_model=SimpleResponse)
+        print("✓ Parser applied to Kunlun assistant")
+    except Exception as e:
+        print(f"⚠️  Kunlun example skipped: {e}")
+        print("   (Set KUNLUN_BEARER_TOKEN to use Kunlun)")
+
     print("\n=== Example completed successfully! ===")
 
 

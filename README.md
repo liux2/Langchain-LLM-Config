@@ -19,6 +19,37 @@ Yet another redundant Langchain abstraction: comprehensive Python package for ma
 - 🪶 **Lightweight Core**: Minimal dependencies with optional provider-specific packages
 - 🎯 **Flexible Installation**: Install only the providers you need
 
+## What's New in V2 Configuration
+
+The V2 configuration format introduces a **model-centric** approach that provides:
+
+### Key Benefits
+
+- ✅ **Simpler API**: Reference models by name instead of provider/type hierarchy
+- ✅ **More Flexible**: Define multiple models per provider with different configurations
+- ✅ **Better Defaults**: Set default models by name, not provider
+- ✅ **VLM Support**: Ready for vision-language models with dedicated `vlm` type
+- ✅ **Clearer Structure**: Each model is a first-class entity with its own config
+- ✅ **Easy Migration**: One command to migrate from V1 to V2
+
+### Quick Comparison
+
+**V1 (Old):**
+
+```python
+# Provider-centric: specify provider name
+assistant = create_assistant(provider="openai", ...)
+```
+
+**V2 (New):**
+
+```python
+# Model-centric: specify model name
+assistant = create_assistant(model="gpt-4-turbo", ...)
+```
+
+See the [Configuration Reference](#configuration-reference) section for detailed examples.
+
 ## Installation
 
 ### Basic Installation
@@ -135,14 +166,17 @@ This package is designed with a **lightweight core** approach:
 ### 1. Initialize Configuration
 
 ```bash
-# Initialize config in current directory
+# Initialize config in current directory (v2 format by default)
 llm-config init
 
 # Or specify a custom location
 llm-config init ~/.config/api.yaml
+
+# Use legacy v1 format (deprecated)
+llm-config init --format v1
 ```
 
-This creates an `api.yaml` file with all supported providers configured.
+This creates an `api.yaml` file with all supported providers configured using the new **v2 model-centric format**.
 
 ### 2. Set Up Environment Variables
 
@@ -158,7 +192,53 @@ This creates a `.env` file with placeholders for your API keys.
 
 ### 3. Configure Your Providers
 
-Edit the generated `api.yaml` file with your API keys and settings:
+Edit the generated `api.yaml` file with your API keys and settings.
+
+#### V2 Configuration Format (Recommended)
+
+The new **model-centric** configuration format allows you to define models independently:
+
+```yaml
+# Default models to use
+default:
+  chat_provider: gpt-3.5-turbo
+  embedding_provider: text-embedding-ada-002
+
+# Model definitions
+models:
+  gpt-3.5-turbo:
+    model_type: chat
+    provider_type: openai
+    model_config:
+      api_base: https://api.openai.com/v1
+      api_key: ${OPENAI_API_KEY}
+      model_name: gpt-3.5-turbo
+      temperature: 0.7
+      max_tokens: 8192
+
+  text-embedding-ada-002:
+    model_type: embedding
+    provider_type: openai
+    model_config:
+      api_base: https://api.openai.com/v1
+      api_key: ${OPENAI_API_KEY}
+      model_name: text-embedding-ada-002
+
+  llama-2-local:
+    model_type: chat
+    provider_type: vllm
+    model_config:
+      api_base: http://localhost:8000/v1
+      api_key: ${OPENAI_API_KEY}
+      model_name: meta-llama/Llama-2-7b-chat-hf
+      temperature: 0.6
+      extra_body:
+        return_reasoning: false  # Set to true for reasoning output
+```
+
+#### V1 Configuration Format (Legacy, Auto-Converted)
+
+The old provider-centric format is still supported but deprecated:
 
 ```yaml
 llm:
@@ -167,26 +247,11 @@ llm:
       api_base: "https://api.openai.com/v1"
       api_key: "${OPENAI_API_KEY}"
       model_name: "gpt-3.5-turbo"
-      temperature: 0.7
-      max_tokens: 8192
-    embeddings:
-      api_base: "https://api.openai.com/v1"
-      api_key: "${OPENAI_API_KEY}"
-      model_name: "text-embedding-ada-002"
-  
-  vllm:
-    chat:
-      api_base: "http://localhost:8000/v1"
-      api_key: "${OPENAI_API_KEY}"
-      model_name: "meta-llama/Llama-2-7b-chat-hf"
-      temperature: 0.6
-      extra_body:
-        return_reasoning: false  # Set to true for reasoning output
-  
   default:
     chat_provider: "openai"
-    embedding_provider: "openai"
 ```
+
+**Note:** V1 configs are automatically converted to V2 at runtime with a deprecation warning.
 
 ### 4. Set Environment Variables
 
@@ -214,36 +279,43 @@ class ArticleAnalysis(BaseModel):
     sentiment: str = Field(..., description="Overall sentiment")
 
 
-# Create an assistant without response model (raw text mode)
+# V2 API: Use model names directly (recommended)
 assistant = create_assistant(
-    response_model=None,  # Explicitly set to None for raw text
+    model="gpt-3.5-turbo",  # Reference model by name from config
+    response_model=ArticleAnalysis,
     system_prompt="You are a helpful article analyzer.",
-    provider="openai",  # or "vllm" (core), "gemini" (requires [gemini] extra)
-    auto_apply_parser=False,
 )
 
-# Use the assistant for raw text output
-print("=== Raw Text Mode ===")
+# Use the assistant - returns dict with parsed data
+# Note: Structured output returns a dict, not a Pydantic model instance
 result = assistant.ask("Analyze this article: ...")
-print(result)
+print(result["summary"])  # Access as dict
+print(result["keywords"])
+print(result["sentiment"])
 
-# Apply parser to the same assistant (modifies in place)
-print("\n=== Applying Parser ===")
-assistant.apply_parser(response_model=ArticleAnalysis)
-
-# Now use the same assistant for structured output
-print("\n=== Structured Mode ===")
-result = assistant.ask("Analyze this article: ...")
-print(result)
+# Raw text mode (no structured output)
+assistant_raw = create_assistant(
+    model="gpt-3.5-turbo",
+    auto_apply_parser=False,  # Disable parsing
+    system_prompt="You are a helpful assistant.",
+)
+result = assistant_raw.ask("Tell me a joke")
+print(result)  # Returns string
 
 # Create an embedding provider
 embedding_provider = create_embedding_provider(
-    provider="openai"  # or "vllm" (core), "infinity" (requires [infinity] extra)
+    model="text-embedding-ada-002"  # Reference model by name
 )
 
 # Get embeddings (synchronous)
 texts = ["Hello world", "How are you?"]
 embeddings = embedding_provider.embed_texts(texts)
+
+# V1 API: Still supported (deprecated)
+assistant_v1 = create_assistant(
+    provider="openai",  # Old way - provider name
+    response_model=ArticleAnalysis,
+)
 ```
 
 #### Advanced Usage (Asynchronous)
@@ -296,6 +368,78 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+#### Kunlun API (Bearer Token Authentication)
+
+Kunlun APIs are OpenAI-compatible but use bearer token authentication instead of API keys.
+
+```python
+from langchain_llm_config import create_assistant, create_embedding_provider
+from pydantic import BaseModel, Field
+
+# Define your response model
+class Analysis(BaseModel):
+    summary: str = Field(description="Brief summary")
+    key_points: list[str] = Field(description="Key points")
+
+# Create Kunlun assistant with thinking mode enabled
+assistant = create_assistant(
+    model="kunlun-qwen3-235b",
+    response_model=Analysis,
+    system_prompt="You are a helpful AI assistant."
+)
+
+# Use the assistant
+result = assistant.ask("Analyze the impact of AI on society")
+print(result["summary"])
+print(result["key_points"])
+
+# Create Kunlun embedding provider
+embedding_provider = create_embedding_provider(model="kunlun-bge-m3")
+embeddings = embedding_provider.embed_texts(["Hello world", "AI is amazing"])
+```
+
+**Configuration:**
+
+```yaml
+models:
+  kunlun-qwen3-235b:
+    model_type: chat
+    provider_type: kunlun
+    model_config:
+      api_base: ${KUNLUN_QWEN3_235B_API_BASE}  # Your Kunlun API endpoint
+      bearer_token: ${KUNLUN_BEARER_TOKEN}
+      model_name: Qwen3-235B-A22B
+      temperature: 0.7
+      max_tokens: 8000
+      extra_body:
+        chat_template_kwargs:
+          enable_thinking: true  # Enable reasoning mode
+
+  kunlun-bge-m3:
+    model_type: embedding
+    provider_type: kunlun
+    model_config:
+      api_base: ${KUNLUN_BGE_M3_API_BASE}  # Your Kunlun API endpoint
+      bearer_token: ${KUNLUN_BEARER_TOKEN}
+      model_name: embedding
+      dimensions: 1024
+```
+
+**Environment Variables:**
+
+```bash
+export KUNLUN_BEARER_TOKEN="your_jwt_token_here"
+export KUNLUN_QWEN3_235B_API_BASE="https://your-kunlun-endpoint/v1"
+export KUNLUN_BGE_M3_API_BASE="https://your-kunlun-endpoint/v1"
+```
+
+**Key Features:**
+
+- 🔐 **Bearer Token Authentication**: Uses JWT tokens instead of API keys
+- 🧠 **Thinking Mode**: Enable reasoning with `chat_template_kwargs.enable_thinking`
+- 🔌 **OpenAI-Compatible**: Works with standard OpenAI API format
+- 🚀 **Full Feature Support**: Streaming, structured output, embeddings
+
 ## Supported Providers
 
 ### Chat Providers
@@ -305,6 +449,7 @@ if __name__ == "__main__":
 | **OpenAI** | GPT-3.5, GPT-4, etc. | Streaming, function calling, structured output | ✅ Core (always available) |
 | **VLLM** | Any HuggingFace model | Local deployment, high performance | ✅ Core (always available) |
 | **Gemini** | Gemini Pro, etc. | Google's latest models | 📦 `[gemini]` extra required |
+| **Kunlun** | Qwen3, etc. | Bearer token auth, thinking mode | ✅ Core (always available) |
 
 ### Embedding Providers
 
@@ -313,12 +458,18 @@ if __name__ == "__main__":
 | **OpenAI** | text-embedding-ada-002, etc. | High quality, reliable | ✅ Core (always available) |
 | **VLLM** | BGE, sentence-transformers | Local deployment | ✅ Core (always available) |
 | **Infinity** | Various embedding models | Fast inference | 📦 `[infinity]` extra required |
+| **Kunlun** | BGE, Qwen3-Embedding, etc. | Bearer token auth | ✅ Core (always available) |
 
 ## CLI Commands
 
 ```bash
-# Initialize a new configuration file
+# Initialize a new configuration file (v2 format by default)
 llm-config init [path]
+llm-config init --format v2  # Explicit v2 format
+llm-config init --format v1  # Legacy v1 format
+
+# Migrate v1 config to v2 format
+llm-config migrate [--output path]
 
 # Set up environment variables and create .env file
 llm-config setup-env [path] [--force]
@@ -426,7 +577,38 @@ The package supports environment variable substitution in configuration:
 api_key: "${OPENAI_API_KEY}"  # Will be replaced with actual value
 ```
 
-### Configuration Structure
+### V2 Configuration Structure (Recommended)
+
+Model-centric configuration where each model is defined independently:
+
+```yaml
+# Default models
+default:
+  chat_provider: model-name      # Model name for chat
+  embedding_provider: model-name # Model name for embeddings
+
+# Model definitions
+models:
+  model-name:
+    model_type: chat | embedding | vlm
+    provider_type: openai | vllm | gemini | infinity | reasoning
+    model_config:
+      api_base: "https://api.example.com/v1"
+      api_key: "${API_KEY}"
+      model_name: "actual-model-name"
+      temperature: 0.7
+      max_tokens: 8192
+      top_p: 1.0
+      connect_timeout: 60
+      read_timeout: 60
+      extra_body:
+        return_reasoning: false  # Enable reasoning output (vLLM)
+      # ... other provider-specific parameters
+```
+
+### V1 Configuration Structure (Legacy)
+
+Provider-centric configuration (automatically converted to v2 at runtime):
 
 ```yaml
 llm:
@@ -435,24 +617,29 @@ llm:
       api_base: "https://api.example.com/v1"
       api_key: "${API_KEY}"
       model_name: "model-name"
-      temperature: 0.7
-      max_tokens: 8192
-      top_p: 1.0
-      connect_timeout: 60
-      read_timeout: 60
-      model_kwargs: {}
-      extra_body:
-        return_reasoning: false  # Enable reasoning output (vLLM)
-      # ... other parameters
+      # ... parameters
     embeddings:
       api_base: "https://api.example.com/v1"
       api_key: "${API_KEY}"
       model_name: "embedding-model"
-      # ... other parameters
   default:
     chat_provider: "provider_name"
     embedding_provider: "provider_name"
 ```
+
+### Migration from V1 to V2
+
+Use the CLI migration tool:
+
+```bash
+# Migrate and create backup
+llm-config migrate
+
+# Specify output path
+llm-config migrate --output api_v2.yaml
+```
+
+Or manually update your config following the v2 structure above.
 
 ## Development
 

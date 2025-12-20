@@ -87,8 +87,8 @@ async def embedding_example() -> None:
 
     # Show similarity between first two texts (should be high)
     try:
-        from numpy import dot  # type: ignore[import-not-found]
-        from numpy.linalg import norm  # type: ignore[import-not-found]
+        from numpy import dot
+        from numpy.linalg import norm
 
         similarity = dot(embeddings[0], embeddings[1]) / (
             norm(embeddings[0]) * norm(embeddings[1])
@@ -114,16 +114,72 @@ async def streaming_example() -> None:
     print("💬 Streaming response...")
     print("Response: ", end="", flush=True)
 
-    # Stream the response using the chat method
-    async for chunk in assistant.achat("Explain quantum computing in simple terms"):
+    # Stream the response using the chat_async method
+    async for chunk in assistant.chat_async(
+        "Explain quantum computing in simple terms"
+    ):
         print(chunk, end="", flush=True)
 
     print("\n")
+    print("💡 For more streaming examples, see: examples/streaming_example.py")
+
+
+async def v2_model_example() -> None:
+    """Example of using V2 config with model names"""
+    print("\n🎯 V2 Configuration - Using Model Names...")
+
+    # V2 format: Use model name directly instead of provider
+    assistant = create_assistant(
+        model="gpt-3.5-turbo",  # Model name from config
+        response_model=ArticleAnalysis,
+        system_prompt="You are a professional article analyzer.",
+    )
+
+    article = "AI is transforming industries worldwide with applications in healthcare, finance, and more."
+
+    print("📝 Analyzing with specific model...")
+    result = await assistant.ask(f"Please analyze this article: {article}")
+
+    print("\n📊 Analysis Results:")
+    print(f"Summary: {result.summary}")
+    print(f"Keywords: {', '.join(result.keywords)}")
+
+
+async def kunlun_example() -> None:
+    """Example of using Kunlun API with bearer token"""
+    print("\n🔐 Kunlun API - Bearer Token Authentication...")
+
+    try:
+        # Kunlun uses bearer token authentication (OpenAI-compatible)
+        assistant = create_assistant(
+            model="kunlun-qwen3-32b",  # Kunlun model from config
+            response_model=ArticleAnalysis,
+            system_prompt="You are a helpful AI assistant.",
+        )
+
+        print("📝 Using Kunlun API...")
+        result = await assistant.ask(
+            "Analyze: Renewable energy is becoming more affordable and accessible."
+        )
+
+        print("\n📊 Analysis Results:")
+        print(f"Summary: {result.summary}")
+        print(f"Sentiment: {result.sentiment}")
+
+    except Exception as e:
+        print(f"⚠️  Kunlun example skipped: {e}")
+        print("   (Set KUNLUN_BEARER_TOKEN and API endpoints to use Kunlun)")
 
 
 async def main() -> None:
     """Main example function"""
     print("🚀 Langchain LLM Config - Basic Usage Examples")
+    print("=" * 50)
+    print("\nSupports multiple providers:")
+    print("  • OpenAI (API key auth)")
+    print("  • VLLM (local deployment)")
+    print("  • Gemini (Google AI)")
+    print("  • Kunlun (bearer token auth)")
     print("=" * 50)
 
     try:
@@ -131,8 +187,18 @@ async def main() -> None:
         await assistant_example()
         await embedding_example()
         await streaming_example()
+        await v2_model_example()
+        await kunlun_example()
 
         print("\n✅ All examples completed successfully!")
+        print("\n📚 More Examples Available:")
+        print("  • Structured Output: examples/structured_output_example.py")
+        print("  • Streaming: examples/streaming_example.py")
+        print("  • Raw Text Mode: examples/raw_text_mode_example.py")
+        print("  • Thinking Mode: examples/thinking_mode_example.py")
+        print("  • Dynamic Parser: examples/dynamic_parser_example.py")
+        print("  • Embeddings: examples/embeddings_example.py")
+        print("\n  See examples/README.md for details")
 
     except Exception as e:
         print(f"\n❌ Error running examples: {e}")
@@ -140,7 +206,9 @@ async def main() -> None:
         print("1. Installed the package: pip install langchain-llm-config")
         print("2. Created a config file: llm-config init")
         print("3. Set up your API keys in the config file")
-        print("4. Set environment variables (e.g., OPENAI_API_KEY)")
+        print(
+            "4. Set environment variables (e.g., OPENAI_API_KEY, KUNLUN_BEARER_TOKEN)"
+        )
 
 
 if __name__ == "__main__":

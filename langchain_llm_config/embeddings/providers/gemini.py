@@ -46,7 +46,7 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
     @property
     def embedding_model(self) -> Embeddings:
         """获取嵌入模型"""
-        return self._embeddings  # type: ignore[no-any-return]
+        return self._embeddings
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """
@@ -67,7 +67,7 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
         while retry_count < self._max_retries:
             try:
                 result = self._embeddings.embed_documents(texts)
-                return result  # type: ignore[no-any-return]
+                return result
             except Exception as e:
                 retry_count += 1
                 last_error = e
@@ -99,7 +99,7 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
         while retry_count < self._max_retries:
             try:
                 result = await self._embeddings.aembed_documents(texts)
-                return result  # type: ignore[no-any-return]
+                return result
             except Exception as e:
                 retry_count += 1
                 last_error = e

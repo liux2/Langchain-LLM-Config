@@ -2,35 +2,66 @@ import asyncio
 import time
 from typing import Any, Dict, List
 
+import httpx
 from langchain_core.embeddings import Embeddings
-from langchain_openai import OpenAIEmbeddings
+from pydantic import SecretStr
 
 from ..base import BaseEmbeddingProvider
 
+try:
+    from langchain_openai import OpenAIEmbeddings
+except ImportError:
+    OpenAIEmbeddings = None  # type: ignore[assignment,misc]
 
-class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
-    """OpenAI嵌入提供者"""
+
+class KunlunEmbeddingProvider(BaseEmbeddingProvider):
+    """Kunlun embedding provider (OpenAI-compatible with bearer token authentication)"""
 
     def __init__(self, config: Dict[str, Any], **kwargs: Any) -> None:
         """
-        初始化OpenAI嵌入提供者
+        初始化Kunlun嵌入提供者
 
         Args:
-            config: 配置字典
+            config: 配置字典，包含如下键:
+                - model_name: 模型名称
+                - api_base: API基础URL
+                - bearer_token: Bearer token用于认证
+                - dimensions: 嵌入维度（可选）
+                - timeout: 超时时间（可选）
             **kwargs: 额外参数
         """
+        if OpenAIEmbeddings is None:
+            raise ImportError(
+                "OpenAIEmbeddings not found. Please install langchain-openai: "
+                "pip install langchain-openai"
+            )
+
+        # Validate bearer token
+        bearer_token = config.get("bearer_token", "")
+        if not bearer_token or bearer_token.strip() == "":
+            raise ValueError(
+                "Kunlun bearer token is required. "
+                "Set KUNLUN_BEARER_TOKEN environment variable or provide it in config."
+            )
+
+        # Disable SSL verification for Kunlun platform (self-signed certificate)
+        http_client = httpx.Client(verify=False)
+        http_async_client = httpx.AsyncClient(verify=False)
+
         embedding_params = {
             "model": config["model_name"],
             "dimensions": config.get("dimensions"),
-            "api_key": config.get("api_key"),
+            "api_key": SecretStr(bearer_token),  # Use bearer token as api_key
             "base_url": config.get("api_base"),
-            "timeout": config.get("timeout", 30),
+            "timeout": config.get("timeout", 60),
+            "http_client": http_client,
+            "http_async_client": http_async_client,
         }
 
         # 记录初始化信息（隐藏敏感信息）
         safe_params = embedding_params.copy()
         if "api_key" in safe_params:
-            safe_params["api_key"] = "******" if safe_params["api_key"] else None
+            safe_params["api_key"] = "******"
 
         # 添加其他kwargs
         embedding_params.update(kwargs)
@@ -74,7 +105,7 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
                     time.sleep(wait_time)
 
         # 所有重试都失败，报告错误
-        raise Exception(f"嵌入文本失败: {str(last_error)}")
+        raise Exception(f"Kunlun嵌入文本失败: {str(last_error)}")
 
     async def embed_texts_async(self, texts: List[str]) -> List[List[float]]:
         """
@@ -106,4 +137,4 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
                     await asyncio.sleep(wait_time)
 
         # 所有重试都失败，报告错误
-        raise Exception(f"嵌入文本失败: {str(last_error)}")
+        raise Exception(f"Kunlun嵌入文本失败: {str(last_error)}")

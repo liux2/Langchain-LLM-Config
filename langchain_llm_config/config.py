@@ -6,6 +6,8 @@ from typing import Any, Dict, Optional, Union
 import yaml
 from dotenv import load_dotenv
 
+from .config_utils import convert_v1_to_v2, detect_config_version
+
 
 def get_default_config_path() -> Path:
     """
@@ -63,11 +65,28 @@ def _process_environment_variable(
         service_config[key] = env_value
 
 
+def _process_env_vars_recursive(config: Dict[str, Any], strict: bool = False) -> None:
+    """
+    Recursively process environment variables in configuration
+
+    Args:
+        config: Configuration dictionary to process
+        strict: If True, raise error for missing env vars
+    """
+    for key, value in config.items():
+        if isinstance(value, dict):
+            _process_env_vars_recursive(value, strict)
+        elif isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+            env_var = value[2:-1]
+            env_value = os.getenv(env_var)
+            _process_environment_variable(env_var, env_value, strict, config, key)
+
+
 def load_config(
     config_path: Optional[Union[str, Path]] = None, strict: bool = False
 ) -> Dict[str, Any]:
     """
-    Load LLM configuration
+    Load LLM configuration (supports both v1 and v2 formats)
 
     Args:
         config_path: Configuration file path, defaults to api.yaml in current directory
@@ -75,7 +94,7 @@ def load_config(
                 If False, use default values and show warnings.
 
     Returns:
-        Processed configuration dictionary
+        Processed configuration dictionary in v2 format
 
     Raises:
         ValueError: Configuration file not found or environment variables not
@@ -95,36 +114,43 @@ def load_config(
         raise ValueError(f"Configuration file not found: {config_path}")
 
     with open(config_path, "r", encoding="utf-8") as f:
-        config: Dict[str, Any] = yaml.safe_load(f)
+        raw_config: Dict[str, Any] = yaml.safe_load(f)
 
-    # Process environment variables
-    llm_config: Dict[str, Any] = config["llm"]
-    for provider_name, provider_config in llm_config.items():
-        if provider_name == "default":
-            continue
+    # Detect config version and convert if needed
+    try:
+        version = detect_config_version(raw_config)
+    except ValueError:
+        # Fallback to v1 if detection fails
+        version = "v1"
 
-        for service_type, service_config in provider_config.items():
-            for key, value in service_config.items():
-                if (
-                    isinstance(value, str)
-                    and value.startswith("${")
-                    and value.endswith("}")
-                ):
-                    env_var = value[2:-1]
-                    env_value = os.getenv(env_var)
-                    _process_environment_variable(
-                        env_var, env_value, strict, service_config, key
-                    )
+    if version == "v1":
+        # Convert v1 to v2 format
+        warnings.warn(
+            "Using deprecated v1 config format. Consider migrating to v2 format "
+            "using 'llm-config migrate' command for better flexibility.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        config = convert_v1_to_v2(raw_config)
+    else:
+        # Already v2 format
+        config = raw_config
 
-    return llm_config
+    # Process environment variables recursively
+    _process_env_vars_recursive(config, strict)
+
+    return config
 
 
-def init_config(config_path: Optional[Union[str, Path]] = None) -> Path:
+def init_config(
+    config_path: Optional[Union[str, Path]] = None, format_version: str = "v2"
+) -> Path:
     """
     Initialize a new configuration file with default settings.
 
     Args:
         config_path: Path where to create the configuration file
+        format_version: Config format version ("v1" or "v2", default "v2")
 
     Returns:
         Path to the created configuration file
@@ -137,8 +163,13 @@ def init_config(config_path: Optional[Union[str, Path]] = None) -> Path:
     # Create parent directory if it doesn't exist
     config_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Get the template configuration
-    template_path = Path(__file__).parent / "templates" / "api.yaml"
+    # Get the template configuration based on version
+    if format_version == "v2":
+        template_name = "api_v2.yaml"
+    else:
+        template_name = "api.yaml"
+
+    template_path = Path(__file__).parent / "templates" / template_name
 
     if template_path.exists():
         # Copy template to target location
@@ -147,22 +178,51 @@ def init_config(config_path: Optional[Union[str, Path]] = None) -> Path:
         shutil.copy2(template_path, config_path)
     else:
         # If template doesn't exist, create a minimal configuration
-        # This should rarely happen since we include the template in the package
-        minimal_config: Dict[str, Any] = {
-            "llm": {
-                "default": {"chat_provider": "openai", "embedding_provider": "openai"},
-                "openai": {
-                    "chat": {
-                        "api_key": "${OPENAI_API_KEY}",
-                        "model_name": "gpt-3.5-turbo",
+        if format_version == "v2":
+            minimal_config: Dict[str, Any] = {
+                "default": {
+                    "chat_provider": "gpt-3.5-turbo",
+                    "embedding_provider": "text-embedding-ada-002",
+                },
+                "models": {
+                    "gpt-3.5-turbo": {
+                        "model_type": "chat",
+                        "provider_type": "openai",
+                        "model_config": {
+                            "api_key": "${OPENAI_API_KEY}",
+                            "model_name": "gpt-3.5-turbo",
+                        },
                     },
-                    "embeddings": {
-                        "api_key": "${OPENAI_API_KEY}",
-                        "model_name": "text-embedding-ada-002",
+                    "text-embedding-ada-002": {
+                        "model_type": "embedding",
+                        "provider_type": "openai",
+                        "model_config": {
+                            "api_key": "${OPENAI_API_KEY}",
+                            "model_name": "text-embedding-ada-002",
+                        },
                     },
                 },
             }
-        }
+        else:
+            # v1 format
+            minimal_config = {
+                "llm": {
+                    "default": {
+                        "chat_provider": "openai",
+                        "embedding_provider": "openai",
+                    },
+                    "openai": {
+                        "chat": {
+                            "api_key": "${OPENAI_API_KEY}",
+                            "model_name": "gpt-3.5-turbo",
+                        },
+                        "embeddings": {
+                            "api_key": "${OPENAI_API_KEY}",
+                            "model_name": "text-embedding-ada-002",
+                        },
+                    },
+                }
+            }
 
         with open(config_path, "w", encoding="utf-8") as f:
             yaml.dump(minimal_config, f, default_flow_style=False, allow_unicode=True)

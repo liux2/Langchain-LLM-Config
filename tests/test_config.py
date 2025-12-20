@@ -61,15 +61,17 @@ class TestConfigFunctions:
     def test_load_config_with_default_values(self, tmp_path: Path) -> None:
         """Test load_config with default values"""
         config_content = {
-            "llm": {
-                "openai": {
-                    "chat": {
+            "models": {
+                "gpt-3.5-turbo": {
+                    "provider_type": "openai",
+                    "model_type": "chat",
+                    "model_config": {
                         "model_name": "gpt-3.5-turbo",
                         "api_key": "${OPENAI_API_KEY}",
-                    }
-                },
-                "default": {"chat_provider": "openai"},
-            }
+                    },
+                }
+            },
+            "default": {"chat_provider": "gpt-3.5-turbo"},
         }
 
         config_file = tmp_path / "test_api.yaml"
@@ -81,7 +83,7 @@ class TestConfigFunctions:
 
         # Verify default values are used - config returns llm_config directly
         # The actual default value might be different, let's check what it is
-        assert config["openai"]["chat"]["api_key"] in [
+        assert config["models"]["gpt-3.5-turbo"]["model_config"]["api_key"] in [
             "sk-demo-key-not-for-production",
             "EMPTY",
             "",
@@ -90,15 +92,17 @@ class TestConfigFunctions:
     def test_load_config_with_custom_default_values(self, tmp_path: Path) -> None:
         """Test load_config with custom default values"""
         config_content = {
-            "llm": {
-                "custom_provider": {
-                    "chat": {
+            "models": {
+                "custom-model": {
+                    "provider_type": "custom_provider",
+                    "model_type": "chat",
+                    "model_config": {
                         "api_key": "${CUSTOM_API_KEY}",
                         "model_name": "custom-model",
-                    }
-                },
-                "default": {"chat_provider": "custom_provider"},
-            }
+                    },
+                }
+            },
+            "default": {"chat_provider": "custom-model"},
         }
 
         config_file = tmp_path / "test_api.yaml"
@@ -109,21 +113,23 @@ class TestConfigFunctions:
         config = load_config(str(config_file), strict=False)
 
         # Verify default value is used for unknown provider
-        assert config["custom_provider"]["chat"]["api_key"] == ""
+        assert config["models"]["custom-model"]["model_config"]["api_key"] == ""
 
     def test_load_config_with_mixed_env_vars_and_literals(self, tmp_path: Path) -> None:
         """Test load_config with mixed environment variables and literal values"""
         config_content = {
-            "llm": {
-                "openai": {
-                    "chat": {
+            "models": {
+                "gpt-3.5-turbo": {
+                    "provider_type": "openai",
+                    "model_type": "chat",
+                    "model_config": {
                         "api_key": "${OPENAI_API_KEY}",
                         "model_name": "gpt-3.5-turbo",
                         "temperature": 0.7,
-                    }
-                },
-                "default": {"chat_provider": "openai"},
-            }
+                    },
+                }
+            },
+            "default": {"chat_provider": "gpt-3.5-turbo"},
         }
 
         config_file = tmp_path / "test_api.yaml"
@@ -134,9 +140,15 @@ class TestConfigFunctions:
         with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key-123"}):
             config = load_config(str(config_file))
 
-        assert config["openai"]["chat"]["api_key"] == "test-key-123"
-        assert config["openai"]["chat"]["model_name"] == "gpt-3.5-turbo"
-        assert config["openai"]["chat"]["temperature"] == 0.7
+        assert (
+            config["models"]["gpt-3.5-turbo"]["model_config"]["api_key"]
+            == "test-key-123"
+        )
+        assert (
+            config["models"]["gpt-3.5-turbo"]["model_config"]["model_name"]
+            == "gpt-3.5-turbo"
+        )
+        assert config["models"]["gpt-3.5-turbo"]["model_config"]["temperature"] == 0.7
 
     def test_load_config_strict_mode(self, tmp_path: Path) -> None:
         """Test load_config in strict mode"""
@@ -172,24 +184,24 @@ class TestConfigFunctions:
         import langchain_llm_config.config as config_module
 
         config_file_path = Path(config_module.__file__)
-        template_path = config_file_path.parent / "templates" / "api.yaml"
+        # Default format is v2, so use api_v2.yaml template
+        template_path = config_file_path.parent / "templates" / "api_v2.yaml"
 
         # Verify the template exists
         assert template_path.exists(), f"Template file not found at {template_path}"
         template_content = template_path.read_text()
 
         target_path = tmp_path / "new_api.yaml"
-        result = init_config(str(target_path))
+        result = init_config(str(target_path), format_version="v2")
 
         assert result == target_path
         assert target_path.exists()
         # Should copy the template content exactly
         assert target_path.read_text() == template_content
-        # Verify it's a valid YAML configuration
+        # Verify it's a valid YAML configuration (V2 format)
         config = yaml.safe_load(target_path.read_text())
-        assert "llm" in config
-        assert "default" in config["llm"]
-        assert "openai" in config["llm"]
+        assert "default" in config
+        assert "models" in config
 
     def test_init_config_without_template(self, tmp_path: Path) -> None:
         """Test init_config without template file"""
@@ -201,12 +213,12 @@ class TestConfigFunctions:
         assert result == target_path
         assert target_path.exists()
 
-        # Verify basic config structure was created
+        # Verify basic config structure was created (V2 format)
         config = load_config(str(result), strict=False)
         assert "default" in config
-        assert "openai" in config
-        assert "vllm" in config
-        assert "gemini" in config
+        assert "models" in config
+        # Check that some models exist
+        assert len(config["models"]) > 0
 
     def test_init_config_create_parent_directory(self, tmp_path: Path) -> None:
         """Test init_config creates parent directory if it doesn't exist"""

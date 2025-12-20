@@ -11,7 +11,7 @@ from ..base import Assistant
 try:
     from langchain_google_genai import ChatGoogleGenerativeAI
 except ImportError:
-    ChatGoogleGenerativeAI = None
+    ChatGoogleGenerativeAI = None  # type: ignore[assignment,misc]
 
 
 class GeminiAssistant(Assistant):

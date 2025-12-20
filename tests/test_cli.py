@@ -33,12 +33,14 @@ class TestCLICommands:
 
             # Capture stdout
             with patch("sys.stdout", new=StringIO()) as mock_stdout:
-                result = init_command(MagicMock(config_path=str(config_path)))
+                # Mock args with format attribute
+                args = MagicMock(config_path=str(config_path), format="v2")
+                result = init_command(args)
 
             assert result == 0
             assert "✅ Configuration file created at:" in mock_stdout.getvalue()
             assert "📝 Next steps:" in mock_stdout.getvalue()
-            mock_init.assert_called_once_with(str(config_path))
+            mock_init.assert_called_once_with(str(config_path), format_version="v2")
 
     def test_init_command_error(self) -> None:
         """Test init command with error"""
