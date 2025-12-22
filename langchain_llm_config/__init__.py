@@ -74,7 +74,7 @@ try:
     __version__ = version("langchain-llm-config")
 except ImportError:
     # Fallback for Python < 3.8
-    __version__ = "0.3.1"
+    __version__ = "0.3.2"
 __author__ = "Xingbang Liu"
 __email__ = "xingbangliu48@gmail.com"
 

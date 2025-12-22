@@ -67,8 +67,9 @@ models:
       api_base: ${KUNLUN_BGE_M3_API_BASE}
       bearer_token: ${KUNLUN_BEARER_TOKEN}
       model_name: embedding
-      dimensions: 1024
       timeout: 60
+      truncate_prompt_tokens: 4096
+      # Note: dimensions parameter not supported by Kunlun server
 
   kunlun-qwen3-embedding:
     model_type: embedding

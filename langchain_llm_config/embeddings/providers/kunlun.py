@@ -1,12 +1,17 @@
 import asyncio
+import inspect
+import logging
 import time
-from typing import Any, Dict, List
+import warnings
+from typing import Any, Dict, List, Set
 
 import httpx
 from langchain_core.embeddings import Embeddings
 from pydantic import SecretStr
 
 from ..base import BaseEmbeddingProvider
+
+logger = logging.getLogger(__name__)
 
 try:
     from langchain_openai import OpenAIEmbeddings
@@ -17,18 +22,45 @@ except ImportError:
 class KunlunEmbeddingProvider(BaseEmbeddingProvider):
     """Kunlun embedding provider (OpenAI-compatible with bearer token authentication)"""
 
+    # Parameters that need special mapping from config to langchain
+    _PARAM_MAPPING = {
+        "model_name": "model",
+        "api_base": "base_url",
+        "bearer_token": "api_key",  # Map bearer_token to api_key
+    }
+
+    # Parameters that are internal to our config and should not be passed to langchain
+    _INTERNAL_PARAMS = {
+        "provider_type",  # Our internal field
+        "model_type",  # Our internal field
+    }
+
+    # Parameters that should go into extra_body for Kunlun API
+    _EXTRA_BODY_PARAMS = {
+        "truncate_prompt_tokens",  # Kunlun-specific parameter
+    }
+
+    @classmethod
+    def _get_known_openai_params(cls) -> Set[str]:
+        """Get the set of known OpenAIEmbeddings parameters by inspecting the class."""
+        if OpenAIEmbeddings is None:  # type: ignore[unreachable]
+            return set()  # type: ignore[unreachable]
+
+        # Get the __init__ signature
+        sig = inspect.signature(OpenAIEmbeddings.__init__)
+        # Extract parameter names (excluding 'self')
+        return {param for param in sig.parameters.keys() if param != "self"}
+
     def __init__(self, config: Dict[str, Any], **kwargs: Any) -> None:
         """
         初始化Kunlun嵌入提供者
 
         Args:
-            config: 配置字典，包含如下键:
-                - model_name: 模型名称
-                - api_base: API基础URL
-                - bearer_token: Bearer token用于认证
-                - dimensions: 嵌入维度（可选）
-                - timeout: 超时时间（可选）
-            **kwargs: 额外参数
+            config: 配置字典，所有参数都会传递给OpenAIEmbeddings，除了内部参数
+                特殊处理:
+                - bearer_token 会被映射为 api_key
+                - 自动禁用SSL验证（自签名证书）
+            **kwargs: 额外参数，会覆盖config中的同名参数
         """
         if OpenAIEmbeddings is None:
             raise ImportError(
@@ -48,27 +80,99 @@ class KunlunEmbeddingProvider(BaseEmbeddingProvider):
         http_client = httpx.Client(verify=False)
         http_async_client = httpx.AsyncClient(verify=False)
 
-        embedding_params = {
-            "model": config["model_name"],
-            "dimensions": config.get("dimensions"),
-            "api_key": SecretStr(bearer_token),  # Use bearer token as api_key
-            "base_url": config.get("api_base"),
-            "timeout": config.get("timeout", 60),
+        # Get known OpenAI parameters dynamically
+        known_params = self._get_known_openai_params()
+
+        # Build parameters dict by mapping config keys to langchain parameter names
+        embedding_params: Dict[str, Any] = {
             "http_client": http_client,
             "http_async_client": http_async_client,
         }
+        extra_body: Dict[str, Any] = {}
+
+        for key, value in config.items():
+            # Skip internal parameters
+            if key in self._INTERNAL_PARAMS:
+                continue
+
+            # Skip None values
+            if value is None:
+                continue
+
+            # Map parameter name if needed
+            param_name = self._PARAM_MAPPING.get(key, key)
+
+            # Special handling for bearer_token -> api_key conversion
+            if key == "bearer_token":
+                embedding_params[param_name] = SecretStr(value)
+                logger.debug(f"Adding config parameter: {key} -> {param_name}=******")
+            # Parameters that should go into extra_body
+            elif (
+                key in self._EXTRA_BODY_PARAMS or param_name in self._EXTRA_BODY_PARAMS
+            ):
+                extra_body[param_name] = value
+                logger.debug(
+                    f"Adding extra_body parameter: {key} -> {param_name}={value}"
+                )
+            # Known OpenAI parameters - pass directly
+            elif param_name in known_params:
+                embedding_params[param_name] = value
+                logger.debug(f"Adding config parameter: {key} -> {param_name}={value}")
+            # Unknown parameters - try to pass directly, will be caught by error handler if invalid
+            else:
+                embedding_params[param_name] = value
+                logger.debug(f"Adding unknown parameter: {key} -> {param_name}={value}")
+
+        # Add extra_body if there are any parameters
+        if extra_body:
+            embedding_params["model_kwargs"] = {"extra_body": extra_body}
+            logger.debug(f"Setting model_kwargs with extra_body: {extra_body}")
+
+        # Set default timeout if not provided
+        if "timeout" not in embedding_params:
+            embedding_params["timeout"] = 60
 
         # 记录初始化信息（隐藏敏感信息）
         safe_params = embedding_params.copy()
         if "api_key" in safe_params:
             safe_params["api_key"] = "******"
 
-        # 添加其他kwargs
+        # kwargs override config parameters
         embedding_params.update(kwargs)
 
-        self._embeddings = OpenAIEmbeddings(**embedding_params)
-        self._max_retries = 3
-        self._retry_delay = 1.0  # 初始重试延迟（秒）
+        # Try to initialize with all parameters
+        try:
+            self._embeddings = OpenAIEmbeddings(**embedding_params)
+            self._max_retries = 3
+            self._retry_delay = 1.0  # 初始重试延迟（秒）
+        except TypeError as e:
+            # If initialization fails due to unexpected parameters, retry without them
+            error_msg = str(e)
+            if (
+                "unexpected keyword argument" in error_msg
+                or "got an unexpected" in error_msg
+            ):
+                # Extract the invalid parameter name from error message
+                import re
+
+                match = re.search(r"'(\w+)'", error_msg)
+                if match:
+                    invalid_param = match.group(1)
+                    warnings.warn(
+                        f"Parameter '{invalid_param}' is not supported by OpenAIEmbeddings and will be ignored. "
+                        f"Error: {error_msg}"
+                    )
+                    # Remove the invalid parameter and retry
+                    embedding_params.pop(invalid_param, None)
+                    self._embeddings = OpenAIEmbeddings(**embedding_params)
+                    self._max_retries = 3
+                    self._retry_delay = 1.0
+                else:
+                    # Can't parse error, re-raise
+                    raise
+            else:
+                # Different type of TypeError, re-raise
+                raise
 
     @property
     def embedding_model(self) -> Embeddings:
