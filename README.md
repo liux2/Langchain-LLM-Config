@@ -335,25 +335,30 @@ embeddings = await embedding_provider.embed_texts_async(texts)
 
 ```python
 import asyncio
-from langchain_llm_config import create_chat_streaming
+from langchain_llm_config import create_assistant
 
 
 async def main():
     """Main async function to run the streaming chat example"""
-    # Create streaming chat assistant
-    # Try with OpenAI first to test streaming
-    streaming_chat = create_chat_streaming(
-        provider="vllm",
+    # Create assistant with auto_apply_parser=False for streaming
+    assistant = create_assistant(
+        provider="openai",
         system_prompt="You are a helpful assistant.",
-        auto_apply_parser=False,
+        auto_apply_parser=False,  # Required for streaming
     )
 
     print("🤖 Starting streaming chat...")
     print("Response: ", end="", flush=True)
 
     try:
-        # Stream responses in real-time
-        async for chunk in streaming_chat.chat_stream("Tell me a story"):
+        # Simple streaming - just get text chunks
+        async for chunk in assistant.chat_async("Tell me a story"):
+            print(chunk, end="", flush=True)
+
+        print("\n")
+
+        # Advanced streaming - get chunks with metadata
+        async for chunk in assistant.chat_stream("Explain quantum computing"):
             if chunk["type"] == "stream":
                 print(chunk["content"], end="", flush=True)
             elif chunk["type"] == "final":
