@@ -5,7 +5,7 @@ This example demonstrates:
 1. Basic text embeddings
 2. Batch embedding generation
 3. Semantic similarity calculation
-4. Different embedding providers (OpenAI, Kunlun, Infinity)
+4. Different embedding providers (Kunlun BGE-M3, Qwen3, BGE-Large-ZH)
 5. Async embedding generation
 """
 
@@ -38,8 +38,8 @@ async def basic_embeddings_example():
     print("🔗 Basic Embeddings Example")
     print("=" * 60)
 
-    # Create embedding provider
-    embedding_provider = create_embedding_provider(provider="openai")
+    # Create embedding provider (uses default from config)
+    embedding_provider = create_embedding_provider()
 
     # Single text embedding
     text = "Artificial Intelligence is transforming the world"
@@ -56,7 +56,7 @@ async def batch_embeddings_example():
     print("\n📦 Batch Embeddings Generation")
     print("=" * 60)
 
-    embedding_provider = create_embedding_provider(provider="openai")
+    embedding_provider = create_embedding_provider()
 
     texts = [
         "Machine learning is a subset of AI",
@@ -79,7 +79,7 @@ async def semantic_similarity_example():
     print("\n🔍 Semantic Similarity Example")
     print("=" * 60)
 
-    embedding_provider = create_embedding_provider(provider="openai")
+    embedding_provider = create_embedding_provider()
 
     texts = [
         "I love programming in Python",
@@ -120,7 +120,7 @@ async def async_embeddings_example():
     print("\n⚡ Async Embeddings Generation")
     print("=" * 60)
 
-    embedding_provider = create_embedding_provider(provider="openai")
+    embedding_provider = create_embedding_provider()
 
     texts = [
         "Artificial Intelligence",
@@ -144,21 +144,36 @@ async def different_providers_example():
 
     text = "Hello, world!"
 
-    # OpenAI
-    print("\n1️⃣  OpenAI Embeddings:")
-    try:
-        provider_openai = create_embedding_provider(provider="openai")
-        embedding = provider_openai.embed_texts([text])[0]
-        print(f"   ✅ Dimensions: {len(embedding)}")
-    except Exception as e:
-        print(f"   ⚠️  Error: {e}")
-
-    # Kunlun
-    print("\n2️⃣  Kunlun Embeddings:")
+    # Kunlun BGE-M3
+    print("\n1️⃣  Kunlun BGE-M3 Embeddings:")
     if os.getenv("KUNLUN_BEARER_TOKEN"):
         try:
             provider_kunlun = create_embedding_provider(model="kunlun-bge-m3")
             embedding = provider_kunlun.embed_texts([text])[0]
+            print(f"   ✅ Dimensions: {len(embedding)}")
+        except Exception as e:
+            print(f"   ⚠️  Error: {e}")
+    else:
+        print("   ⚠️  Skipped: KUNLUN_BEARER_TOKEN not set")
+
+    # Kunlun Qwen3 Embedding
+    print("\n2️⃣  Kunlun Qwen3 Embeddings:")
+    if os.getenv("KUNLUN_BEARER_TOKEN"):
+        try:
+            provider_qwen = create_embedding_provider(model="kunlun-qwen3-embedding")
+            embedding = provider_qwen.embed_texts([text])[0]
+            print(f"   ✅ Dimensions: {len(embedding)}")
+        except Exception as e:
+            print(f"   ⚠️  Error: {e}")
+    else:
+        print("   ⚠️  Skipped: KUNLUN_BEARER_TOKEN not set")
+
+    # Kunlun BGE-Large-ZH
+    print("\n3️⃣  Kunlun BGE-Large-ZH Embeddings:")
+    if os.getenv("KUNLUN_BEARER_TOKEN"):
+        try:
+            provider_bge = create_embedding_provider(model="kunlun-bge-large-zh")
+            embedding = provider_bge.embed_texts([text])[0]
             print(f"   ✅ Dimensions: {len(embedding)}")
         except Exception as e:
             print(f"   ⚠️  Error: {e}")
@@ -171,7 +186,7 @@ async def use_case_document_search():
     print("\n📚 Use Case: Document Search")
     print("=" * 60)
 
-    embedding_provider = create_embedding_provider(provider="openai")
+    embedding_provider = create_embedding_provider()
 
     # Document corpus
     documents = [
