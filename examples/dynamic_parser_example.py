@@ -28,7 +28,6 @@ def main() -> None:
     assistant = create_assistant(
         response_model=None,  # No response model
         auto_apply_parser=False,  # Don't apply parser
-        provider="openai",  # or "vllm", "gemini"
         system_prompt="You are a helpful assistant.",
     )
 
@@ -87,7 +86,6 @@ def main() -> None:
     assistant_no_model = create_assistant(
         response_model=None,
         auto_apply_parser=False,
-        provider="openai",
     )
 
     try:
@@ -100,7 +98,6 @@ def main() -> None:
         create_assistant(
             response_model=None,
             auto_apply_parser=True,  # This should fail
-            provider="openai",
         )
     except ValueError as e:
         print(f"✓ Expected error: {e}")

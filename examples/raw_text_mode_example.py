@@ -27,9 +27,8 @@ async def basic_raw_text_example():
     print("📝 Basic Raw Text Mode")
     print("=" * 60)
 
-    # Create assistant without parser
+    # Create assistant without parser (uses default from config)
     assistant = create_assistant(
-        provider="openai",
         auto_apply_parser=False,  # Disable structured output
         system_prompt="You are a helpful assistant.",
     )
@@ -49,7 +48,6 @@ async def raw_vs_structured_comparison():
     # Raw text mode
     print("\n1️⃣  Raw Text Mode:")
     assistant_raw = create_assistant(
-        provider="openai",
         auto_apply_parser=False,
         system_prompt="You are a helpful assistant.",
     )
@@ -61,7 +59,6 @@ async def raw_vs_structured_comparison():
     # Structured output mode
     print("\n2️⃣  Structured Output Mode:")
     assistant_structured = create_assistant(
-        provider="openai",
         response_model=SimpleResponse,
         system_prompt="You are a helpful assistant.",
     )
@@ -78,7 +75,6 @@ async def when_to_use_raw_text():
     print("=" * 60)
 
     assistant = create_assistant(
-        provider="openai",
         auto_apply_parser=False,
         system_prompt="You are a creative writing assistant.",
     )
@@ -103,13 +99,13 @@ async def raw_text_with_different_providers():
     print("\n🔌 Raw Text Mode with Different Providers")
     print("=" * 60)
 
-    providers = ["openai"]  # Add more if available: "vllm", "gemini"
+    models = ["kunlun-qwen3-32b"]  # Add more if available
 
-    for provider in providers:
+    for model in models:
         try:
-            print(f"\n📍 Provider: {provider}")
+            print(f"\n📍 Model: {model}")
             assistant = create_assistant(
-                provider=provider,
+                model=model,
                 auto_apply_parser=False,
                 system_prompt="You are a helpful assistant.",
             )
@@ -127,7 +123,6 @@ async def raw_text_async_example():
     print("=" * 60)
 
     assistant = create_assistant(
-        provider="openai",
         auto_apply_parser=False,
         system_prompt="You are a helpful assistant.",
     )
@@ -155,7 +150,6 @@ async def raw_text_with_context():
     print("=" * 60)
 
     assistant = create_assistant(
-        provider="openai",
         auto_apply_parser=False,
         system_prompt="You are a technical documentation writer.",
     )

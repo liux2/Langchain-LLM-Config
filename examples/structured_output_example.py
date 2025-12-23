@@ -71,7 +71,6 @@ async def basic_structured_output():
     print("=" * 60)
 
     assistant = create_assistant(
-        provider="openai",
         response_model=SimpleResponse,
         system_prompt="You are a helpful assistant.",
     )
@@ -89,7 +88,6 @@ async def complex_nested_model():
     print("=" * 60)
 
     assistant = create_assistant(
-        provider="openai",
         response_model=ArticleAnalysis,
         system_prompt="You are a professional content analyzer.",
     )
@@ -123,7 +121,6 @@ async def list_and_enum_example():
     print("=" * 60)
 
     assistant = create_assistant(
-        provider="openai",
         response_model=CodeReview,
         system_prompt="You are an expert code reviewer.",
     )
@@ -172,7 +169,6 @@ async def structured_output_with_validation():
         category: str = Field(..., min_length=1, max_length=50, description="Category")
 
     assistant = create_assistant(
-        provider="openai",
         response_model=ValidatedResponse,
         system_prompt="You are an evaluation assistant.",
     )
@@ -193,13 +189,13 @@ async def structured_output_different_providers():
     print("\n🔌 Structured Output with Different Providers")
     print("=" * 60)
 
-    providers = ["openai"]  # Add more if available
+    models = ["kunlun-qwen3-32b"]  # Add more if available
 
-    for provider in providers:
+    for model in models:
         try:
-            print(f"\n📍 Provider: {provider}")
+            print(f"\n📍 Model: {model}")
             assistant = create_assistant(
-                provider=provider,
+                model=model,
                 response_model=SimpleResponse,
                 system_prompt="You are a helpful assistant.",
             )
@@ -217,7 +213,6 @@ async def async_batch_processing():
     print("=" * 60)
 
     assistant = create_assistant(
-        provider="openai",
         response_model=SimpleResponse,
         system_prompt="You are a helpful assistant.",
     )

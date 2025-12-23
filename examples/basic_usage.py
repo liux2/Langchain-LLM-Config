@@ -26,14 +26,13 @@ async def assistant_example() -> None:
     """Example of using the assistant"""
     print("🤖 Creating assistant...")
 
-    # Create an assistant with structured output
+    # Create an assistant with structured output (uses default from config)
     assistant = create_assistant(
         response_model=ArticleAnalysis,
         system_prompt=(
             "You are a professional article analyzer. "
             "Provide accurate and concise analysis."
         ),
-        provider="openai",  # Can be "openai", "vllm", or "gemini"
     )
 
     # Sample article
@@ -67,8 +66,8 @@ async def embedding_example() -> None:
     """Example of using embeddings"""
     print("\n🔗 Creating embedding provider...")
 
-    # Create an embedding provider
-    embedding_provider = create_embedding_provider(provider="openai")
+    # Create an embedding provider (uses default from config)
+    embedding_provider = create_embedding_provider()
 
     # Sample texts
     texts = [
@@ -104,9 +103,8 @@ async def streaming_example() -> None:
 
     from langchain_llm_config import create_assistant
 
-    # Create an assistant instance
+    # Create an assistant instance (uses default from config)
     assistant = create_assistant(
-        provider="openai",
         system_prompt="You are a helpful assistant that provides concise answers.",
         auto_apply_parser=False,  # For streaming, we don't use structured output
     )
@@ -176,10 +174,10 @@ async def main() -> None:
     print("🚀 Langchain LLM Config - Basic Usage Examples")
     print("=" * 50)
     print("\nSupports multiple providers:")
+    print("  • Kunlun (bearer token auth) - Default")
     print("  • OpenAI (API key auth)")
     print("  • VLLM (local deployment)")
     print("  • Gemini (Google AI)")
-    print("  • Kunlun (bearer token auth)")
     print("=" * 50)
 
     try:

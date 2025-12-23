@@ -19,9 +19,8 @@ async def basic_streaming_example():
     print("🌊 Basic Streaming Example")
     print("=" * 60)
 
-    # Create assistant without parser for streaming
+    # Create assistant without parser for streaming (uses default from config)
     assistant = create_assistant(
-        provider="openai",
         auto_apply_parser=False,  # Required for streaming
         system_prompt="You are a helpful assistant that provides clear explanations.",
     )
@@ -100,7 +99,6 @@ async def streaming_with_context():
     print("=" * 60)
 
     assistant = create_assistant(
-        provider="openai",
         auto_apply_parser=False,
         system_prompt="You are a helpful coding assistant.",
     )
@@ -127,7 +125,6 @@ async def streaming_error_handling():
     print("=" * 60)
 
     assistant = create_assistant(
-        provider="openai",
         auto_apply_parser=False,
         system_prompt="You are a helpful assistant.",
     )

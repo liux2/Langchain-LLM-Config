@@ -1,5 +1,5 @@
 default:
-  chat_provider: kunlun-qwen3-235b
+  chat_provider: kunlun-qwen3-30b
   embedding_provider: kunlun-bge-m3
 
 models:
