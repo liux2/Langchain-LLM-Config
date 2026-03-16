@@ -1379,7 +1379,7 @@ wheels = [
 
 [[package]]
 name = "langchain-llm-config"
-version = "0.3.2"
+version = "0.3.3"
 source = { editable = "." }
 dependencies = [
     { name = "langchain-core" },

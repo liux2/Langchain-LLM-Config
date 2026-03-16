@@ -216,6 +216,7 @@ class Assistant(ABC):
         Returns:
             Cleaned content ready for JSON parsing
         """
+        import json
         import re
 
         # Remove <think> tags and their content
@@ -229,7 +230,58 @@ class Assistant(ABC):
         if fence_match:
             cleaned = fence_match.group(1).strip()
 
+        # Repair invalid JSON escape sequences
+        # LLMs sometimes include LaTeX notation (e.g., \mathrm, \sim, \S) in JSON strings
+        # These create invalid escape sequences that json.loads() rejects
+        # Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+        # Strategy: Find backslashes not followed by valid escape chars and double them
+        cleaned = self._repair_json_escapes(cleaned)
+
         return cleaned
+
+    def _repair_json_escapes(self, text: str) -> str:
+        """
+        Repair invalid JSON escape sequences by escaping backslashes.
+
+        This handles cases where LLMs include LaTeX notation or other text
+        with backslashes that aren't valid JSON escape sequences.
+
+        Args:
+            text: Potentially malformed JSON string
+
+        Returns:
+            JSON string with repaired escape sequences
+        """
+        import re
+
+        # Valid JSON escape sequences: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+        # We need to escape backslashes that are NOT followed by these characters
+        # First, let's try to parse as-is to see if it's already valid
+        try:
+            import json
+
+            json.loads(text)
+            return text  # Already valid, no repair needed
+        except (json.JSONDecodeError, ValueError):
+            pass  # Need to repair
+
+        # Replace invalid escape sequences
+        # Match backslash followed by any character that's NOT a valid escape char
+        # Valid escape chars: " \ / b f n r t u
+        def replace_invalid_escape(match: re.Match[str]) -> str:
+            escaped_char: str = match.group(1)
+            # If it's not a valid JSON escape character, double the backslash
+            if escaped_char not in ('"', "\\", "/", "b", "f", "n", "r", "t", "u"):
+                return "\\\\" + escaped_char
+            matched_text: str = match.group(0)
+            return matched_text  # Keep valid escapes as-is
+
+        # This regex matches a backslash followed by any single character
+        # We process it inside string contexts only (between quotes)
+        # For simplicity, we'll do a global replacement and rely on the callback
+        repaired = re.sub(r"\\(.)", replace_invalid_escape, text)
+
+        return repaired
 
     def _build_system_prompt(self, extra_system_prompt: Optional[str] = None) -> str:
         """Build the complete system prompt."""
