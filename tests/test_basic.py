@@ -49,6 +49,7 @@ class TestConfig:
         """Test that strict mode raises error for missing environment variables"""
         # Create a config with environment variable references
         import yaml
+        from unittest.mock import patch, MagicMock
 
         strict_config = {
             "llm": {
@@ -65,11 +66,17 @@ class TestConfig:
         with open(test_config_file, "w") as f:
             yaml.dump(strict_config, f)
 
-        # Should raise ValueError in strict mode
-        with pytest.raises(
-            ValueError, match="Environment variable GEMINI_API_KEY not set"
-        ):
-            load_config(test_config_file, strict=True)
+        # Should raise ValueError in strict mode when env var is not set
+        # Mock Path.exists to prevent .env file from being loaded
+        with patch.dict("os.environ", {}, clear=True):
+            with patch("langchain_llm_config.config.Path.cwd") as mock_cwd:
+                mock_path = MagicMock()
+                mock_path.exists.return_value = False  # Pretend .env doesn't exist
+                mock_cwd.return_value = mock_path
+                with pytest.raises(
+                    ValueError, match="Environment variable GEMINI_API_KEY not set"
+                ):
+                    load_config(test_config_file, strict=True)
 
     def test_load_config_non_strict_mode_missing_env_var(
         self, test_config_file: str
@@ -80,6 +87,7 @@ class TestConfig:
         """
         # Create a config with environment variable references (V2 format)
         import yaml
+        from unittest.mock import patch, MagicMock
 
         config_with_env_vars = {
             "models": {
@@ -98,12 +106,18 @@ class TestConfig:
         with open(test_config_file, "w") as f:
             yaml.dump(config_with_env_vars, f)
 
-        # Should not raise error and use default value
-        config = load_config(test_config_file, strict=False)
-        assert (
-            config["models"]["gemini-pro"]["model_config"]["api_key"]
-            == "demo-key-not-for-production"
-        )
+        # Should not raise error and use default value when env var is not set
+        # Mock Path.exists to prevent .env file from being loaded
+        with patch.dict("os.environ", {}, clear=True):
+            with patch("langchain_llm_config.config.Path.cwd") as mock_cwd:
+                mock_path = MagicMock()
+                mock_path.exists.return_value = False  # Pretend .env doesn't exist
+                mock_cwd.return_value = mock_path
+                config = load_config(test_config_file, strict=False)
+                assert (
+                    config["models"]["gemini-pro"]["model_config"]["api_key"]
+                    == "demo-key-not-for-production"
+                )
 
     def test_load_config_with_env_vars(
         self, test_config_file: str, mock_env_vars: Any

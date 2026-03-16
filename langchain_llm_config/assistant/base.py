@@ -208,7 +208,7 @@ class Assistant(ABC):
 
     def _clean_content_for_parsing(self, content: str) -> str:
         """
-        Clean content by removing reasoning tags before JSON parsing
+        Clean content by removing reasoning tags and markdown fences before JSON parsing
 
         Args:
             content: Raw content from LLM
@@ -220,7 +220,16 @@ class Assistant(ABC):
 
         # Remove <think> tags and their content
         cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL)
-        return cleaned.strip()
+        cleaned = cleaned.strip()
+
+        # Strip markdown code fences if present
+        # Some LLMs mirror the format from PydanticOutputParser.get_format_instructions()
+        # which wraps the schema in markdown fences, causing them to return fenced JSON
+        fence_match = re.search(r"```(?:json)?\s*\n?(.*?)```", cleaned, re.DOTALL)
+        if fence_match:
+            cleaned = fence_match.group(1).strip()
+
+        return cleaned
 
     def _build_system_prompt(self, extra_system_prompt: Optional[str] = None) -> str:
         """Build the complete system prompt."""

@@ -60,6 +60,8 @@ class TestConfigFunctions:
 
     def test_load_config_with_default_values(self, tmp_path: Path) -> None:
         """Test load_config with default values"""
+        from unittest.mock import MagicMock
+
         config_content = {
             "models": {
                 "gpt-3.5-turbo": {
@@ -79,15 +81,21 @@ class TestConfigFunctions:
             yaml.dump(config_content, f)
 
         # Test with no environment variables set
-        config = load_config(str(config_file), strict=False)
+        # Mock Path.exists to prevent .env file from being loaded
+        with patch.dict("os.environ", {}, clear=True):
+            with patch("langchain_llm_config.config.Path.cwd") as mock_cwd:
+                mock_path = MagicMock()
+                mock_path.exists.return_value = False  # Pretend .env doesn't exist
+                mock_cwd.return_value = mock_path
+                config = load_config(str(config_file), strict=False)
 
-        # Verify default values are used - config returns llm_config directly
-        # The actual default value might be different, let's check what it is
-        assert config["models"]["gpt-3.5-turbo"]["model_config"]["api_key"] in [
-            "sk-demo-key-not-for-production",
-            "EMPTY",
-            "",
-        ]
+                # Verify default values are used - config returns llm_config directly
+                # The actual default value might be different, let's check what it is
+                assert config["models"]["gpt-3.5-turbo"]["model_config"]["api_key"] in [
+                    "sk-demo-key-not-for-production",
+                    "EMPTY",
+                    "",
+                ]
 
     def test_load_config_with_custom_default_values(self, tmp_path: Path) -> None:
         """Test load_config with custom default values"""
@@ -152,6 +160,8 @@ class TestConfigFunctions:
 
     def test_load_config_strict_mode(self, tmp_path: Path) -> None:
         """Test load_config in strict mode"""
+        from unittest.mock import MagicMock
+
         config_content = {
             "llm": {
                 "openai": {"chat": {"api_key": "${OPENAI_API_KEY}"}},
@@ -164,11 +174,16 @@ class TestConfigFunctions:
             yaml.dump(config_content, f)
 
         # Test with no environment variables set in strict mode
+        # Mock Path.exists to prevent .env file from being loaded
         with patch.dict("os.environ", {}, clear=True):
-            with pytest.raises(
-                ValueError, match="Environment variable OPENAI_API_KEY not set"
-            ):
-                load_config(str(config_file), strict=True)
+            with patch("langchain_llm_config.config.Path.cwd") as mock_cwd:
+                mock_path = MagicMock()
+                mock_path.exists.return_value = False  # Pretend .env doesn't exist
+                mock_cwd.return_value = mock_path
+                with pytest.raises(
+                    ValueError, match="Environment variable OPENAI_API_KEY not set"
+                ):
+                    load_config(str(config_file), strict=True)
 
     def test_load_config_invalid_yaml(self, tmp_path: Path) -> None:
         """Test load_config with invalid YAML"""
