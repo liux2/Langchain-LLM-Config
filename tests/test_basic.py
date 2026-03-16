@@ -48,8 +48,9 @@ class TestConfig:
     ) -> None:
         """Test that strict mode raises error for missing environment variables"""
         # Create a config with environment variable references
+        from unittest.mock import MagicMock, patch
+
         import yaml
-        from unittest.mock import patch, MagicMock
 
         strict_config = {
             "llm": {
@@ -86,8 +87,9 @@ class TestConfig:
         for missing environment variables
         """
         # Create a config with environment variable references (V2 format)
+        from unittest.mock import MagicMock, patch
+
         import yaml
-        from unittest.mock import patch, MagicMock
 
         config_with_env_vars = {
             "models": {
